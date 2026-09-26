@@ -1,7 +1,15 @@
-import des
-import md4
-import sha
-import utils
+import hashlib
+
+from core.lib.mschap import des
+from core.lib.mschap import md4
+from core.lib.mschap import utils
+
+
+def _b(data):
+    "bytes-ify str for hashlib"
+    if isinstance(data, str):
+        return data.encode("utf-8")
+    return data
 
 
 def generate_nt_response_mschap(challenge,password):
@@ -79,10 +87,10 @@ def challenge_hash(peer_challenge,authenticator_challenge,username):
 
     
     """
-    sha_hash=sha.new()
-    sha_hash.update(peer_challenge)
-    sha_hash.update(authenticator_challenge)
-    sha_hash.update(username)
+    sha_hash=hashlib.sha1()
+    sha_hash.update(_b(peer_challenge))
+    sha_hash.update(_b(authenticator_challenge))
+    sha_hash.update(_b(username))
     return sha_hash.digest()[:8]
     
 def nt_password_hash(passwd,pad_to_21_bytes=True):
@@ -109,7 +117,7 @@ def nt_password_hash(passwd,pad_to_21_bytes=True):
 
     if pad_to_21_bytes:
         # addig zeros to get 21 bytes string
-        res = res + '\000\000\000\000\000'
+        res = res + b'\000\000\000\000\000'
 
     return res
 
@@ -140,7 +148,7 @@ def challenge_response(challenge,password_hash):
 #    while len(zpassword_hash)<21:
 #       zpassword_hash+="\0"
     
-    response=""
+    response=b""
     des_obj=des.DES(zpassword_hash[0:7])
     response+=des_obj.encrypt(challenge)
 
@@ -220,13 +228,13 @@ def generate_authenticator_response(password,nt_response,peer_challenge,authenti
 
    }
     """
-    Magic1="\x4D\x61\x67\x69\x63\x20\x73\x65\x72\x76\x65\x72\x20\x74\x6F\x20\x63\x6C\x69\x65\x6E\x74\x20\x73\x69\x67\x6E\x69\x6E\x67\x20\x63\x6F\x6E\x73\x74\x61\x6E\x74"
-    Magic2="\x50\x61\x64\x20\x74\x6F\x20\x6D\x61\x6B\x65\x20\x69\x74\x20\x64\x6F\x20\x6D\x6F\x72\x65\x20\x74\x68\x61\x6E\x20\x6F\x6E\x65\x20\x69\x74\x65\x72\x61\x74\x69\x6F\x6E"
+    Magic1=b"\x4D\x61\x67\x69\x63\x20\x73\x65\x72\x76\x65\x72\x20\x74\x6F\x20\x63\x6C\x69\x65\x6E\x74\x20\x73\x69\x67\x6E\x69\x6E\x67\x20\x63\x6F\x6E\x73\x74\x61\x6E\x74"
+    Magic2=b"\x50\x61\x64\x20\x74\x6F\x20\x6D\x61\x6B\x65\x20\x69\x74\x20\x64\x6F\x20\x6D\x6F\x72\x65\x20\x74\x68\x61\x6E\x20\x6F\x6E\x65\x20\x69\x74\x65\x72\x61\x74\x69\x6F\x6E"
 
     password_hash=nt_password_hash(password,False)
     password_hash_hash=hash_nt_password_hash(password_hash)
 
-    sha_hash=sha.new()
+    sha_hash=hashlib.sha1()
     sha_hash.update(password_hash_hash)
     sha_hash.update(nt_response)
     sha_hash.update(Magic1)
@@ -234,7 +242,7 @@ def generate_authenticator_response(password,nt_response,peer_challenge,authenti
     
     challenge=challenge_hash(peer_challenge,authenticator_challenge,username)
 
-    sha_hash=sha.new()
+    sha_hash=hashlib.sha1()
     sha_hash.update(digest)
     sha_hash.update(challenge)
     sha_hash.update(Magic2)
@@ -245,7 +253,8 @@ def generate_authenticator_response(password,nt_response,peer_challenge,authenti
 def convert_to_hex_string(string):
     hex_str=""
     for c in string:
-        hex_tmp=hex(ord(c))[2:]
+        c = c if isinstance(c, int) else ord(c)
+        hex_tmp=hex(c)[2:]
         if len(hex_tmp)==1:
             hex_tmp="0"+hex_tmp
         hex_str+=hex_tmp

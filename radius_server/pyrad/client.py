@@ -6,8 +6,8 @@
 
 __docformat__   = "epytext en"
 
-import md5, select, socket, time
-import host, packet
+import select, socket, time
+from . import host, packet
 
 class Timeout(Exception):
         """Simple exception class which is raised when a timeout occurs
@@ -120,7 +120,7 @@ class Client(host.Host):
 
                 for attempt in range(self.retries):
                         if attempt and pkt.code==packet.AccountingRequest:
-                                if pkt.has_key("Acct-Delay-Time"):
+                                if "Acct-Delay-Time" in pkt:
                                         pkt["Acct-Delay-Time"]=pkt["Acct-Delay-Time"][0]+self.timeout
                                 else:
                                         pkt["Acct-Delay-Time"]=self.timeout

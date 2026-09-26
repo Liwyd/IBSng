@@ -6,7 +6,7 @@
 """
 
 import select, socket
-import host, packet
+from . import host, packet
 import sys, time
 
 from core.ibs_exceptions import *
@@ -119,13 +119,13 @@ class Server(host.Host):
                 @param pkt: packet to process
                 @type  pkt: Packet class instance
                 """
-                if not self.hosts.has_key(pkt.source[0]):
-                        raise PacketError, "Received packet from unknown host %s" % pkt.source[0]
+                if pkt.source[0] not in self.hosts:
+                        raise PacketError("Received packet from unknown host %s" % pkt.source[0])
 
                 pkt.secret=self.hosts[pkt.source[0]].secret
 
                 if pkt.code!=packet.AccessRequest:
-                        raise PacketError, "Received non-authentication packet on authentication port"
+                        raise PacketError("Received non-authentication packet on authentication port")
 
 
         def _HandleAcctPacket(self, fd, pkt):
@@ -140,17 +140,17 @@ class Server(host.Host):
                 @param pkt: packet to process
                 @type  pkt: Packet class instance
                 """
-                if not self.hosts.has_key(pkt.source[0]):
-                        raise PacketError, "Received packet from unknown host %s" % pkt.source[0]
+                if pkt.source[0] not in self.hosts:
+                        raise PacketError("Received packet from unknown host %s" % pkt.source[0])
 
                 pkt.secret=self.hosts[pkt.source[0]].secret
 
                 if not pkt.code in [ packet.AccountingRequest,
                                 packet.AccountingResponse ]:
-                        raise PacketError, "Received non-accounting packet on accounting port"
+                        raise PacketError("Received non-accounting packet on accounting port")
 
                 if not pkt.VerifyAcctRequest():
-                    raise PacketError, "AccountingRequest Authenticator is invalid from host %s"%pkt.source[0]
+                    raise PacketError("AccountingRequest Authenticator is invalid from host %s"%pkt.source[0])
 
         
 
@@ -179,8 +179,8 @@ class Server(host.Host):
                         self._fdmap[fd.fileno()]=fd
                         self._poll.register(fd.fileno(), select.POLLIN|select.POLLPRI|select.POLLERR)
 
-                self._realauthfds=map(lambda x: x.fileno(), self.authfds)
-                self._realacctfds=map(lambda x: x.fileno(), self.acctfds)
+                self._realauthfds=[x.fileno() for x in self.authfds]
+                self._realacctfds=[x.fileno() for x in self.acctfds]
         
 
         def CreateReplyPacket(self, pkt):
@@ -234,15 +234,15 @@ class Server(host.Host):
                                         try:
                                                 fdo=self._fdmap[fd]
                                                 self._ProcessInput(fdo)
-                                        except PacketError, err:
+                                        except PacketError as err:
                                                 logException(LOG_ERROR,"Radius Server: Dropping packet: %s" % str(err))
-                                        except packet.PacketError, err:
+                                        except packet.PacketError as err:
                                                 logException(LOG_ERROR,"Radius Server: Received a broken packet: %s" % str(err))
                                         except:
                                             logException(LOG_ERROR)
                                 else:
                                         toLog("Radius Server Unexpected event!",LOG_ERROR)
-                    except select.error,e:
+                    except select.error as e:
                         if e[0]==4: #interrupted system call
                             continue
                         else:
@@ -279,13 +279,13 @@ class Proxy(Server):
                 @param pkt: packet to process
                 @type  pkt: Packet class instance
                 """
-                if not self.hosts.has_key(pkt.source[0]):
-                        raise PacketError, "Received packet from unknown host"
+                if pkt.source[0] not in self.hosts:
+                        raise PacketError("Received packet from unknown host")
 
                 pkt.secret=self.hosts[pkt.source[0]].secret
 
                 if not pkt.code in [ client.AccessAccept, client.AccessReject, client.AccountingResponse ]:
-                        raise PacketError, "Received non-response on proxy socket"
+                        raise PacketError("Received non-response on proxy socket")
 
 
 

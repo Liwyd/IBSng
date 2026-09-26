@@ -42,7 +42,7 @@ The datatypes currently supported are::
 
 __docformat__   = "epytext en"
 
-import bidict, tools
+from . import bidict, tools
 
 class ParseError(Exception):
         """Dictionary parser exceptions.
@@ -57,9 +57,9 @@ class ParseError(Exception):
 
         def __init__(self, msg=None, **data):
                 self.msg=msg
-                if data.has_key("filename"):
+                if "filename" in data:
                         self.filename=data["filename"]
-                elif data.has_key("linenumber"):
+                elif "linenumber" in data:
                         self.linenumber=data["linenumber"]
         
         def __str__(self):
@@ -85,7 +85,7 @@ class Attribute:
                 self.type=datatype
                 self.vendor=vendor
                 self.values=bidict.BiDict()
-                for (key,value) in values.items():
+                for (key,value) in list(values.items()):
                         self.values.Add(key, value)
 
 
@@ -126,16 +126,19 @@ class Dictionary:
                 return self.attributes[key]
 
         def has_key(self, key):
-                return self.attributes.has_key(key)
+                return key in self.attributes
+
+        def __contains__(self, key):
+                return key in self.attributes
 
         def __ParseAttribute(self, state, tokens):
                 if not len(tokens) in [4,5]:
-                        raise ParseError, "Incorrect number of tokens for attribute definition"
+                        raise ParseError("Incorrect number of tokens for attribute definition")
 
                 if len(tokens)==5:
                         vendor=tokens[4]
                         if not self.vendors.HasForward(vendor):
-                                raise ParseError, "Unknown vendor " + vendor
+                                raise ParseError("Unknown vendor " + vendor)
                 else:
                         vendor=state["vendor"]
 
@@ -144,7 +147,7 @@ class Dictionary:
                 if not datatype in \
                         ("string", "ipaddr", "integer", "date",
                         "octets", "abinary"):
-                        raise ParseError, "Illegal type: " + datatype
+                        raise ParseError("Illegal type: " + datatype)
 
                 if vendor:
                         key=(self.vendors.GetForward(vendor),code)
@@ -157,14 +160,14 @@ class Dictionary:
 
         def __ParseValue(self, state, tokens):
                 if len(tokens)!=4:
-                        raise ParseError, "Incorrect number of tokens for attribute definition"
+                        raise ParseError("Incorrect number of tokens for attribute definition")
 
                 (attr, key, value)=tokens[1:]
 
                 try:
                         adef=self.attributes[attr]
                 except KeyError:
-                        raise ParseError, "Value defined for unknown attribute " + attr
+                        raise ParseError("Value defined for unknown attribute " + attr)
 
                 if adef.type=="integer":
                         value=int(eval(value))
@@ -174,7 +177,7 @@ class Dictionary:
 
         def __ParseVendor(self, state, tokens):
                 if len(tokens)!=3:
-                        raise ParseError, "Incorrect number of tokens for vendor definition"
+                        raise ParseError("Incorrect number of tokens for vendor definition")
 
                 (vendorname,vendor)=tokens[1:]
                 self.vendors.Add(vendorname, int(vendor))
@@ -182,24 +185,24 @@ class Dictionary:
 
         def __ParseBeginVendor(self, state, tokens):
                 if len(tokens)!=2:
-                        raise ParseError, "Incorrect number of tokens for begin-vendor statement"
+                        raise ParseError("Incorrect number of tokens for begin-vendor statement")
 
                 vendor=tokens[1]
 
                 if not self.vendors.HasForward(vendor):
-                        raise ParseError, "Unknown vendor %s in begin-vendor statement" % vendor
+                        raise ParseError("Unknown vendor %s in begin-vendor statement" % vendor)
 
                 state["vendor"]=vendor
 
 
         def __ParseEndVendor(self, state, tokens):
                 if len(tokens)!=2:
-                        raise ParseError, "Incorrect number of tokens for end-vendor statement"
+                        raise ParseError("Incorrect number of tokens for end-vendor statement")
 
                 vendor=tokens[1]
 
                 if state["vendor"]!=vendor:
-                        raise ParseError, "Ending non-open vendor" + vendor
+                        raise ParseError("Ending non-open vendor" + vendor)
 
                 state["vendor"]=""
 
@@ -218,7 +221,7 @@ class Dictionary:
                 state={}
                 state["vendor"]=""
 
-                for line in fd.xreadlines():
+                for line in fd:
                         line=line.split("#", 1)[0].strip()
 
                         tokens=line.split()

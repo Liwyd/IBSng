@@ -33,24 +33,25 @@ class RADIUS(host.Host, protocol.DatagramProtocol):
 
 
         def createPacket(self, **kwargs):
-                raise NotImplementedError, "Attempted to use a pure base class"
+                raise NotImplementedError("Attempted to use a pure base class")
 
 
-        def datagramReceived(self, datagram, (host, port)):
+        def datagramReceived(self, datagram, xxx_todo_changeme):
+                (host, port) = xxx_todo_changeme
                 try:
                         pkt=self.CreatePacket(packet=datagram)
-                except packet.PacketError, err:
+                except packet.PacketError as err:
                         log.msg("Dropping invalid packet: " + str(err))
                         return
 
-                if not self.hosts.has_key(host):
+                if host not in self.hosts:
                         log.msg("Dropping packet from unknown host " + host)
                         return
                 
                 pkt.source=(host, port)
                 try:
                         self.processPacket(pkt)
-                except PacketError, err:
+                except PacketError as err:
                         log.msg("Dropping packet from %s: %s" % (host, str(err)))
 
 
@@ -62,7 +63,7 @@ class RADIUSAccess(RADIUS):
 
         def processPacket(self, pkt):
                 if pkt.code!=packet.AccessRequest:
-                        raise PacketError, "non-AccessRequest packet on authentication socket"
+                        raise PacketError("non-AccessRequest packet on authentication socket")
 
 
 class RADIUSAccounting(RADIUS):
@@ -72,7 +73,7 @@ class RADIUSAccounting(RADIUS):
 
         def processPacket(self, pkt):
                 if pkt.code!=packet.AccountingRequest:
-                        raise PacketError, "non-AccountingRequest packet on authentication socket"
+                        raise PacketError("non-AccountingRequest packet on authentication socket")
 
 if __name__=="__main__":
         log.startLogging(sys.stdout, 0)

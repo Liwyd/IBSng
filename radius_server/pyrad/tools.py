@@ -5,14 +5,16 @@
 import struct
 
 
-def EncodeString(str):
-        assert len(str)<=253
+def EncodeString(value):
+        if isinstance(value, str):
+                value = value.encode('utf-8')
+        assert len(value)<=253
 
-        return str
+        return value
 
 
 def EncodeAddress(addr):
-        (a,b,c,d)=map(int, addr.split("."))
+        (a,b,c,d)=list(map(int, addr.split(".")))
         return struct.pack("BBBB", a, b, c, d)
 
 

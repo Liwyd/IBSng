@@ -1,6 +1,12 @@
 #According to rfc2617, but only implements empty qop
-import md5
+import hashlib
 from core.lib.mschap.utils import str2hex
+
+
+def _b(value):
+    if isinstance(value, bytes):
+        return value
+    return str(value).encode('utf-8')
 
 
 def DigestCalcA1(username, realm, passwd):
@@ -54,15 +60,15 @@ void DigestCalcHA1(
 };
 
     """
-    HA1 = md5.new()
+    HA1 = hashlib.md5()
 
-    HA1.update(username)
-    HA1.update(":")
+    HA1.update(_b(username))
+    HA1.update(b":")
 
-    HA1.update(realm)
-    HA1.update(":")
+    HA1.update(_b(realm))
+    HA1.update(b":")
 
-    HA1.update(password)
+    HA1.update(_b(password))
 
     return str2hex(HA1.digest()).lower()
 
@@ -119,22 +125,22 @@ void DigestCalcResponse(
       CvtHex(RespHash, Response);
 };
     """
-    HA2 = md5.new()
+    HA2 = hashlib.md5()
 
-    HA2.update(method)
-    HA2.update(":")
+    HA2.update(_b(method))
+    HA2.update(b":")
 
-    HA2.update(digest_uri)
+    HA2.update(_b(digest_uri))
 
     HA2Hex = str2hex(HA2.digest()).lower()
 
-    RespHash = md5.new()
-    RespHash.update(HA1)
-    RespHash.update(":")
+    RespHash = hashlib.md5()
+    RespHash.update(_b(HA1))
+    RespHash.update(b":")
 
-    RespHash.update(nonce)
-    RespHash.update(":")
+    RespHash.update(_b(nonce))
+    RespHash.update(b":")
 
-    RespHash.update(HA2Hex)
+    RespHash.update(_b(HA2Hex))
     return str2hex(RespHash.digest()).lower()
         

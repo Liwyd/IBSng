@@ -17,7 +17,7 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import des_c, utils
+from core.lib.mschap import des_c, utils
 
 #---------------------------------------------------------------------
 class DES:
@@ -55,9 +55,12 @@ def str_to_key56(key_str):
         #rise DESException, 'ERROR. Wrong key type.'
         pass
     if len(key_str) < 7:
-        key_str = key_str + '\000\000\000\000\000\000\000'[:(7 - len(key_str))]
+        pad = b'\000\000\000\000\000\000\000' if isinstance(key_str, bytes) \
+              else '\000\000\000\000\000\000\000'
+        key_str = key_str + pad[:(7 - len(key_str))]
     key_56 = []
-    for i in key_str[:7]: key_56.append(ord(i))
+    for i in key_str[:7]:
+        key_56.append(i if isinstance(i, int) else ord(i))
 
     return key_56
 

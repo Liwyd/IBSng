@@ -22,7 +22,7 @@ class BiDict:
 
 
         def __delitem__(self, key):
-                if self.forward.has_key(key):
+                if key in self.forward:
                         del self.backward[self.forward[key]]
                         del self.forward[key]
                 else:
@@ -34,7 +34,7 @@ class BiDict:
 
 
         def HasForward(self, key):
-                return self.forward.has_key(key)
+                return key in self.forward
 
 
         def GetBackward(self, key):
@@ -42,6 +42,6 @@ class BiDict:
 
 
         def HasBackward(self, key):
-                return self.backward.has_key(key)
+                return key in self.backward
 
 

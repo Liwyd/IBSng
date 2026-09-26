@@ -14,8 +14,9 @@ __docformat__   = "epytext en"
 from core.lib.mschap import mschap,mppe
 from core.lib import digest
 
-import md5, struct, types, random, UserDict
-import tools
+import hashlib, struct, types, random
+from collections import UserDict
+from . import tools
 
 # Packet codes
 AccessRequest           = 1
@@ -38,7 +39,7 @@ class PacketError(Exception):
         pass
 
 
-class Packet(UserDict.UserDict):
+class Packet(UserDict):
         """Packet acts like a standard python map to provide simple access
         to the RADIUS attributes. Since RADIUS allows for repeated
         attributes the value will always be a sequence. pyrad makes sure
@@ -65,22 +66,24 @@ class Packet(UserDict.UserDict):
                 @param packet: raw packet to decode
                 @type packet:  string
                 """
-                UserDict.UserDict.__init__(self)
+                UserDict.__init__(self)
                 self.code=code
                 if id != None:
                         self.id=id
                 else:
                         self.id=CreateID()
+                if isinstance(secret, str):
+                        secret=secret.encode('utf-8')
                 self.secret=secret
                 self.authenticator=authenticator
 
-                if attributes.has_key("dict"):
+                if "dict" in attributes:
                         self.dict=attributes["dict"]
 
-                if attributes.has_key("packet"):
+                if "packet" in attributes:
                         self.DecodePacket(attributes["packet"])
 
-                for (key,value) in attributes.items():
+                for (key,value) in list(attributes.items()):
                         if key in [ "dict", "packet"]:
                                 continue
 
@@ -107,7 +110,7 @@ class Packet(UserDict.UserDict):
         
 
         def _EncodeKeyValues(self, key, values):
-                if type(key)!=types.StringType:
+                if type(key)!=str:
                         return (key, values)
 
                 attr=self.dict.attributes[key]
@@ -118,11 +121,11 @@ class Packet(UserDict.UserDict):
                         key=attr.code
 
                 return (key,
-                        map(lambda v,a=attr,s=self: s._EncodeValue(a,v), values))
+                        list(map(lambda v,a=attr,s=self: s._EncodeValue(a,v), values)))
 
 
         def _EncodeKey(self, key):
-                if type(key)!=types.StringType:
+                if type(key)!=str:
                         return key
 
                 attr=self.dict.attributes[key]
@@ -152,40 +155,43 @@ class Packet(UserDict.UserDict):
                 (key,value)=self._EncodeKeyValues(key, [value])
                 value=value[0]
 
-                if self.data.has_key(key):
+                if key in self.data:
                         self.data[key].append(value)
                 else:
                         self.data[key]=[value]
 
 
         def __getitem__(self, key):
-                if type(key)!=types.StringType:
+                if type(key)!=str:
                         return self.data[key]
 
                 values=self.data[self._EncodeKey(key)]
                 attr=self.dict.attributes[key]
                 res=[]
                 for v in values:
-	                    res.append(self._DecodeValue(attr, v))
+                            res.append(self._DecodeValue(attr, v))
                 return res
 
         
 
         def has_key(self, key):
-                return self.data.has_key(self._EncodeKey(key))
+                return self._EncodeKey(key) in self.data
+
+        def __contains__(self, key):
+                return self._EncodeKey(key) in self.data
 
 
         def __setitem__(self, key, item):
-                if type(key)==types.StringType:
+                if type(key)==str:
                         (key,item)=self._EncodeKeyValues(key, [item])
                         self.data[key]=item
                 else:
-                        assert(type(item)==types.ListType)
+                        assert(type(item)==list)
                         self.data[key]=[item]
 
 
         def keys(self):
-                return map(self._DecodeKey, self.data.keys())
+                return list(map(self._DecodeKey, list(self.data.keys())))
 
 
         def CreateAuthenticator(self):
@@ -200,11 +206,7 @@ class Packet(UserDict.UserDict):
                 @rtype: string
                 """
 
-                data=""
-                for i in range(16):
-                        data+=chr(random.randrange(0,256))
-
-                return data
+                return bytes(random.randrange(0,256) for i in range(16))
 
 
         def CreateID(self):
@@ -238,7 +240,7 @@ class Packet(UserDict.UserDict):
                 attr=self._PktEncodeAttributes()
                 header=struct.pack("!BBH", self.code, self.id, (20+len(attr)))
 
-                authenticator=md5.new(header[0:4] + self.authenticator
+                authenticator=hashlib.md5(header[0:4] + self.authenticator
                         + attr + self.secret).digest()
 
                 return header + authenticator + attr
@@ -251,7 +253,7 @@ class Packet(UserDict.UserDict):
                 if rawreply==None:
                         rawreply.reply.ReplyPacket()
                 
-                hash=md5.new(rawreply[0:4] + self.authenticator + 
+                hash=hashlib.md5(rawreply[0:4] + self.authenticator + 
                         rawreply[20:] + self.secret).digest()
 
                 if hash!=reply.authenticator:
@@ -263,7 +265,7 @@ class Packet(UserDict.UserDict):
 
 
         def _PktEncodeAttribute(self, key, value):
-                if type(key)==types.TupleType:
+                if type(key)==tuple:
                         value=struct.pack("!L", key[0]) + \
                                 self._PktEncodeAttribute(key[1], value)
                         key=26
@@ -272,8 +274,8 @@ class Packet(UserDict.UserDict):
 
 
         def _PktEncodeAttributes(self):
-                result=""
-                for (code, datalst) in self.items():
+                result=b""
+                for (code, datalst) in list(self.items()):
                         for data in datalst:
                                 result+=self._PktEncodeAttribute(code, data)
 
@@ -303,22 +305,22 @@ class Packet(UserDict.UserDict):
                             value = data[6:]
                             
                 except struct.error:
-                        raise PacketError, "Vender attribute header is corrupt"
+                        raise PacketError("Vender attribute header is corrupt")
 
                 return ((vendor,type), value)
 
 
         def _PktDecodeDigestAttribute(self, data):
-	    #decode Digest-Attributes according to draft-sterman-aaa-sip-00.txt
-		try:
-    			sub_type, sub_length = struct.unpack("!BB", data[:2])
-		except struct.error:
-                        raise PacketError, "Digest attribute header is corrupt"
-		
-		key = 1062 + sub_type
-		value = data[2:sub_length]
-		
-		return key, value
+            #decode Digest-Attributes according to draft-sterman-aaa-sip-00.txt
+                try:
+                        sub_type, sub_length = struct.unpack("!BB", data[:2])
+                except struct.error:
+                        raise PacketError("Digest attribute header is corrupt")
+                
+                key = 1062 + sub_type
+                value = data[2:sub_length]
+                
+                return key, value
 
 
         def DecodePacket(self, packet):
@@ -333,11 +335,11 @@ class Packet(UserDict.UserDict):
                 try:
                         (self.code, self.id, length, self.authenticator)=struct.unpack("!BBH16s", packet[0:20])
                 except struct.error:
-                        raise PacketError, "Packet header is corrupt"
+                        raise PacketError("Packet header is corrupt")
                 if len(packet)!=length:
-                        raise PacketError, "Packet has invalid length actual length:%s packet length:%s"%(len(packet),length)
+                        raise PacketError("Packet has invalid length actual length:%s packet length:%s"%(len(packet),length))
                 if length>8192:
-                        raise PacketError, "Packet length is too long (%s)"%length
+                        raise PacketError("Packet length is too long (%s)"%length)
 
                 self.clear()
 
@@ -346,19 +348,19 @@ class Packet(UserDict.UserDict):
                         try:
                                 (key, attrlen)=struct.unpack("!BB", packet[0:2])
                         except struct.error:
-                                raise PacketError, "Attribute header is corrupt"
+                                raise PacketError("Attribute header is corrupt")
 
                         if attrlen<2 or attrlen>255:
-                            raise PacketError, "Invalid attribute length (%s)"%attrlen
+                            raise PacketError("Invalid attribute length (%s)"%attrlen)
                             
                         value=packet[2:attrlen]
                         if key==26: #VSA
                                 (key,value)=self._PktDecodeVendorAttribute(value)
 
-			elif key == 207: #Digest
-				(key,value)=self._PktDecodeDigestAttribute(value)
-	    
-                        if self.data.has_key(key):
+                        elif key == 207: #Digest
+                                (key,value)=self._PktDecodeDigestAttribute(value)
+            
+                        if key in self.data:
                                 self.data[key].append(value)
                         else:
                                 self.data[key]=[value]
@@ -414,50 +416,57 @@ class AuthPacket(Packet):
 
                 return header+attr
 
-	#Digest Methods
-	def checkDigestPassword(self, password):
-	    """
+        #Digest Methods
+        def checkDigestPassword(self, password):
+            """
 		password: clear text password of user
 	    """	
-	    username = self["Digest-User-Name"][0]
-	    realm = self["Digest-Realm"][0]
-	    nonce = self["Digest-Nonce"][0]
-	    method = self["Digest-Method"][0]
-	    digest_uri = self["Digest-URI"][0]
-	    
-	    HA1 = digest.DigestCalcHA1(username, realm, password, nonce)
-	    digest_response = digest.DigestCalcResponse(HA1, nonce, method, digest_uri)
+            username = self["Digest-User-Name"][0]
+            realm = self["Digest-Realm"][0]
+            nonce = self["Digest-Nonce"][0]
+            method = self["Digest-Method"][0]
+            digest_uri = self["Digest-URI"][0]
+            
+            HA1 = digest.DigestCalcHA1(username, realm, password, nonce)
+            digest_response = digest.DigestCalcResponse(HA1, nonce, method, digest_uri)
 
-	    return digest_response == self["Digest-Response"][0]
+            expected = self["Digest-Response"][0]
+            if isinstance(expected, bytes):
+                expected = expected.decode("ascii", errors="replace")
+            return digest_response == expected
 
-	#MS Chap Methods
-	
+        #MS Chap Methods
+        
         def checkMSChapPassword(self, password):
-	    """
+            """
 		password: clear text password of user
 	    """	
-	    mschap_response = mschap.generate_nt_response_mschap(self["MS-CHAP-Challenge"][0],password)
+            mschap_response = mschap.generate_nt_response_mschap(self["MS-CHAP-Challenge"][0],password)
             return mschap_response == self["MS-CHAP-Response"][0][26:]
 
         def checkMSChap2Password(self, username, password):
-	    """
+            """
 		password: clear text password of user
 	    """	
             peer_challenge=self["MS-CHAP2-Response"][0][2:18]
-	    mschap2_response = mschap.generate_nt_response_mschap2(self["MS-CHAP-Challenge"][0],peer_challenge,username,password)
+            mschap2_response = mschap.generate_nt_response_mschap2(self["MS-CHAP-Challenge"][0],peer_challenge,username,password)
             return mschap2_response == self["MS-CHAP2-Response"][0][26:]
 
         def generateMSChap2AuthenticatorResponse(self,username,password):
-	    """
+            """
 		generate Authenticator response to set as MS-CHAP2-Success value in Access-Accept
 	    """
             peer_challenge=self["MS-CHAP2-Response"][0][2:18]
             nt_response=self["MS-CHAP2-Response"][0][26:]
             authenticator_challenge=self["MS-CHAP-Challenge"][0]
             ident=self["MS-CHAP2-Response"][0][0]
-            return ident+mschap.generate_authenticator_response(password,nt_response,peer_challenge,authenticator_challenge,username)
+            if isinstance(ident, int):
+                ident=bytes([ident])
+            else:
+                ident=ident.encode("ascii") if isinstance(ident, str) else ident
+            return ident+mschap.generate_authenticator_response(password,nt_response,peer_challenge,authenticator_challenge,username).encode("ascii")
 
-        def addMSChapMPPEkeys(self,password,encryption_policy="\x01",encryption_types="\x06"):
+        def addMSChapMPPEkeys(self,password,encryption_policy=b"\x01",encryption_types=b"\x06"):
             """
                 add mppe keys to packet. use for mschap-v1 authentications
                 password(string): clear text password
@@ -466,12 +475,12 @@ class AuthPacket(Packet):
             """
             lm_hash=mschap.lm_password_hash(password)
             nt_hash=mschap.hash_nt_password_hash(mschap.nt_password_hash(password,False))
-            self["MS-CHAP-MPPE-Keys"]=self.PwCrypt(lm_hash[:8]+nt_hash+"\000"*8)
-            self["MS-MPPE-Encryption-Policy"]="\000"*3+encryption_policy
-            self["MS-MPPE-Encryption-Types"]="\000"*3+encryption_types
+            self["MS-CHAP-MPPE-Keys"]=self.PwCrypt(lm_hash[:8]+nt_hash+b"\000"*8)
+            self["MS-MPPE-Encryption-Policy"]=b"\000"*3+encryption_policy
+            self["MS-MPPE-Encryption-Types"]=b"\000"*3+encryption_types
 
 
-        def addMSChap2MPPEkeys(self,password,nt_response,encryption_policy="\x01",encryption_types="\x06"):
+        def addMSChap2MPPEkeys(self,password,nt_response,encryption_policy=b"\x01",encryption_types=b"\x06"):
             """
                 add mppe keys to packet.use for mschap-v2 authentications
                 password(string): clear text password
@@ -479,7 +488,7 @@ class AuthPacket(Packet):
                 encryption_types(string):
             """
             (send_key,recv_key)=mppe.mppe_chap2_gen_keys(password,nt_response)
-            (send_text,recv_text)=map(mppe.create_plain_text,(send_key,recv_key))
+            (send_text,recv_text)=list(map(mppe.create_plain_text,(send_key,recv_key)))
             (send_salt,recv_salt)=mppe.create_salts()
             
             self["MS-MPPE-Send-Key"]=send_salt+\
@@ -487,11 +496,11 @@ class AuthPacket(Packet):
             self["MS-MPPE-Recv-Key"]=recv_salt+\
                                      mppe.radius_encrypt_keys(recv_text,self.secret,self.authenticator,recv_salt)
 
-            self["MS-MPPE-Encryption-Policy"]="\000"*3+encryption_policy
-            self["MS-MPPE-Encryption-Types"]="\000"*3+encryption_types
+            self["MS-MPPE-Encryption-Policy"]=b"\000"*3+encryption_policy
+            self["MS-MPPE-Encryption-Types"]=b"\000"*3+encryption_types
 
 
-	#Chap Methods
+        #Chap Methods
 
         def checkChapPassword(self,password):
                 """Check if chap password in packet matched with password
@@ -511,20 +520,20 @@ class AuthPacket(Packet):
                 except KeyError:
                     return False
 
-                if self.has_key("CHAP-Challenge"):
+                if "CHAP-Challenge" in self:
                     chap_challenge=self["CHAP-Challenge"][0]
                 else:
                     chap_challenge=self.authenticator
                 
-                hash=md5.new()
-                hash.update(chap_password[0])
-                hash.update(password)
+                hash=hashlib.md5()
+                hash.update(bytes([chap_password[0]]))
+                hash.update(password.encode("utf-8") if isinstance(password, str) else password)
                 hash.update(chap_challenge)
                 return hash.digest()==chap_password[1:]
         
 
 
-	#Pap Methods
+        #Pap Methods
 
         def PwDecrypt(self, password):
                 """Unobfuscate a RADIUS password
@@ -539,18 +548,20 @@ class AuthPacket(Packet):
                 @rtype:          string
                 """
 
+                if isinstance(password, str):
+                        password=password.encode("utf-8")
                 buf=password
-                pw=""
+                pw=b""
 
                 last=self.authenticator
                 while buf:
-                        hash=md5.new(self.secret+last).digest()
+                        hash=hashlib.md5(self.secret+last).digest()
                         for i in range(16):
-                                pw+=chr(ord(hash[i]) ^ ord(buf[i]))
+                                pw+=bytes([hash[i] ^ buf[i]])
 
                         (last,buf)=(buf[:16], buf[16:])
 
-                while pw.endswith("\x00"):
+                while pw.endswith(b"\x00"):
                         pw=pw[:-1]
 
                 return pw
@@ -571,21 +582,22 @@ class AuthPacket(Packet):
                 @return:         obfuscated version of the password
                 @rtype:          string
                 """
+                if isinstance(password, str):
+                        password=password.encode("utf-8")
                 if self.authenticator==None:
                         self.authenticator=self.CreateAuthenticator()
 
                 buf=password
-                if len(password)%16!=0:
-                        buf+="\x00" * (16-(len(password)%16))
+                if len(buf)%16!=0:
+                        buf+=b"\x00" * (16-(len(buf)%16))
 
-                hash=md5.new(self.secret+self.authenticator).digest()
-                result=""
+                result=b""
 
                 last=self.authenticator
                 while buf:
-                        hash=md5.new(self.secret+last).digest()
+                        hash=hashlib.md5(self.secret+last).digest()
                         for i in range(16):
-                                result+=chr(ord(hash[i]) ^ ord(buf[i]))
+                                result+=bytes([hash[i] ^ buf[i]])
 
                         last=result[-16:]
                         buf=buf[16:]
@@ -609,7 +621,7 @@ class AcctPacket(Packet):
                 @type packet:  string
                 """
                 Packet.__init__(self, code, id, secret, authenticator, **attributes)
-                if attributes.has_key("packet"):
+                if "packet" in attributes:
                     self.raw_packet=attributes["packet"]
 
 
@@ -625,7 +637,7 @@ class AcctPacket(Packet):
                @rtype: intger
             """
             assert(self.raw_packet)
-            hash=md5.new(self.raw_packet[0:4] + 16*"\x00" + \
+            hash=hashlib.md5(self.raw_packet[0:4] + 16*b"\x00" + \
                         self.raw_packet[20:] + self.secret).digest()
 
             return hash==self.authenticator
@@ -647,7 +659,7 @@ class AcctPacket(Packet):
                         self.id=self.CreateID()
 
                 header=struct.pack("!BBH", self.code, self.id, (20+len(attr)))
-                self.authenticator= md5.new(header[0:4] + 16 * "\x00" + attr
+                self.authenticator= hashlib.md5(header[0:4] + 16 * b"\x00" + attr
                                             + self.secret).digest()
 
                 return header + self.authenticator + attr

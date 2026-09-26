@@ -1,4 +1,5 @@
 import time
+from core import defs
 import threading
 
 from core.ibs_exceptions import *
@@ -42,7 +43,7 @@ class RequestList:
         
         try:
 
-            if self.__requests.has_key(key): #this is faster than try/expect
+            if key in self.__requests: #this is faster than try/expect
                 return self.__requests[key]
             return None
 
@@ -58,7 +59,7 @@ class RequestList:
         try:
             to_delete_keys = []
     
-            min_time = long(time.time()) - defs.RADIUS_SERVER_CLEANUP_TIME
+            min_time = int(time.time()) - defs.RADIUS_SERVER_CLEANUP_TIME
             for key in self.__requests:
                 request_obj = self.__requests[key]
 
@@ -66,7 +67,7 @@ class RequestList:
                     to_delete_keys.append(key)
 
                     if not request_obj.isFinished():
-                	toLog("WARNING: Unfinished request for 1 minute key: %(key)s"%locals(), LOG_ERROR)
+                        toLog("WARNING: Unfinished request for 1 minute key: %(key)s"%locals(), LOG_ERROR)
                 
             for key in to_delete_keys:
                 del(self.__requests[key])

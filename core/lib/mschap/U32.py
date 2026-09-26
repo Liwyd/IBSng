@@ -20,33 +20,39 @@
 #
 #====================================================================
 
-C = 0x1000000000L
+from functools import total_ordering
+
+C = 0x1000000000
 
 #--------------------------------------------------------------------
 def norm(n):
-    return n & 0xFFFFFFFFL
+    return n & 0xFFFFFFFF
 
 #====================================================================
+@total_ordering
 class U32:
-    v = 0L
+    v = 0
 
     #--------------------------------------------------------------------
     def __init__(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     #--------------------------------------------------------------------
     def set(self, value = 0):
-        self.v = C + norm(abs(long(value)))
+        self.v = C + norm(abs(int(value)))
 
     #--------------------------------------------------------------------
     def __repr__(self):
         return hex(norm(self.v))
 
     #--------------------------------------------------------------------
-    def __long__(self): return long(norm(self.v))
+    def __long__(self): return int(norm(self.v))
 
     #--------------------------------------------------------------------
     def __int__(self): return int(norm(self.v))
+
+    #--------------------------------------------------------------------
+    __index__ = __int__
 
     #--------------------------------------------------------------------
     def __chr__(self): return chr(norm(self.v))
@@ -61,7 +67,7 @@ class U32:
     def __sub__(self, b):
         r = U32()
         if self.v < b.v:
-            r.v = C + norm(0x100000000L - (b.v - self.v))
+            r.v = C + norm(0x100000000 - (b.v - self.v))
         else: r.v = C + norm(self.v - b.v)
         return r
 
@@ -72,10 +78,13 @@ class U32:
         return r
 
     #--------------------------------------------------------------------
-    def __div__(self, b):
+    def __floordiv__(self, b):
         r = U32()
-        r.v = C + (norm(self.v) / norm(b.v))
+        r.v = C + (norm(self.v) // norm(b.v))
         return r
+
+    #--------------------------------------------------------------------
+    __truediv__ = __floordiv__
 
     #--------------------------------------------------------------------
     def __mod__(self, b):
@@ -143,6 +152,18 @@ class U32:
         else: return 0
 
     #--------------------------------------------------------------------
-    def __nonzero__(self):
+    def __eq__(self, b):
+        if not isinstance(b, U32):
+            return NotImplemented
+        return norm(self.v) == norm(b.v)
+
+    #--------------------------------------------------------------------
+    def __lt__(self, b):
+        if not isinstance(b, U32):
+            return NotImplemented
+        return norm(self.v) < norm(b.v)
+
+    #--------------------------------------------------------------------
+    def __bool__(self):
         return norm(self.v)
         

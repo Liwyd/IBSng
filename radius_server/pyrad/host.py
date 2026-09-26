@@ -2,7 +2,7 @@
 #
 # Copyright 2003 Wichert Akkerman <wichert@deephackmode.org>
 
-import packet
+from . import packet
 
 class Host:
         """Generic RADIUS capable host.

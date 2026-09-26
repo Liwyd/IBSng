@@ -44,9 +44,9 @@ class IBSRadiusServer(server.Server):
                                                                 pkt.source[1], 
                                                                 pkt.id)
 
-	    attrs = []
-	    for attr_name in pkt.keys():
-	        attrs.append("%s: %s"%(attr_name,pkt[attr_name]))
+            attrs = []
+            for attr_name in list(pkt.keys()):
+                attrs.append("%s: %s"%(attr_name,pkt[attr_name]))
 
             log_str += " \n".join(attrs)
             toLog(log_str + "\n",LOG_RADIUS)

@@ -17,49 +17,53 @@
 # 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
 #
 
-import string
-
 hd = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',]
 
+def _ord(i):
+    "accept both bytes elements (int) and str elements (char)"
+    return i if isinstance(i, int) else ord(i)
+
 #--------------------------------------------------------------------------------------------
-def str2hex_num(str):
-    res = 0L
-    for i in str:
+def str2hex_num(data, delimiter=''):
+    res = 0
+    for i in data:
         res = res << 8
-        res = res + long(ord(i))
+        res = res + _ord(i)
     return hex(res)
 
 #--------------------------------------------------------------------------------------------
-def str2hex(str, delimiter=''):
+def str2hex(data, delimiter=''):
     res = ''
-    for i in str:
-        res = res + hd[ord(i)/16]
-        res = res + hd[ord(i) - ((ord(i)/16) * 16)]
+    for i in data:
+        i = _ord(i)
+        res = res + hd[i >> 4]
+        res = res + hd[i & 0x0F]
         res = res + delimiter
     return res
 
 #--------------------------------------------------------------------------------------------
-def str2dec(str, delimiter=''):
+def str2dec(data, delimiter=''):
     res = ''
-    for i in str:
-        res = res + '%3d' % ord(i)
+    for i in data:
+        res = res + '%3d' % _ord(i)
         res = res + delimiter
     return res
 
 
 #--------------------------------------------------------------------------------------------
 def hex2str(hex_str):
-    res = ''
+    res = bytearray()
     for i in range(0, len(hex_str), 2):
-        res = res + (chr(hd.index(hex_str[i]) * 16 + hd.index(hex_str[i+1])))
-    return res
+        res.append(hd.index(hex_str[i]) * 16 + hd.index(hex_str[i+1]))
+    return bytes(res)
 
 #--------------------------------------------------------------------------------------------
 def str2prn_str(bin_str, delimiter=''):
     ""
     res = ''
     for i in bin_str:
-        if ord(i) > 31: res = res + i
+        i = _ord(i)
+        if i > 31: res = res + chr(i)
         else: res = res + '.'
         res = res + delimiter
     return res
@@ -68,9 +72,9 @@ def str2prn_str(bin_str, delimiter=''):
 def byte2bin_str(char):
     ""
     res = ''
-    t = ord(char)
+    t = _ord(char)
     while t > 0:
-        t1 = t / 2
+        t1 = t // 2
         if t != 2 * t1: res = '1' + res
         else: res = '0' + res
         t = t1
@@ -79,48 +83,48 @@ def byte2bin_str(char):
     return res
 
 #--------------------------------------------------------------------------------------------
-def str2lst(str):
+def str2lst(data):
     res = []
-    for i in str:
-        res.append(ord(i))
+    for i in data:
+        res.append(_ord(i))
     return res
 
 #--------------------------------------------------------------------------------------------
 def lst2str(lst):
-    res = ''
-    for i in lst:
-        res = res + chr(i & 0xFF)
-    return res
+    return bytes(i & 0xFF for i in lst)
 
 #--------------------------------------------------------------------------------------------
 def int2chrs(number_int):
     ""
-    return chr(number_int & 0xFF) + chr((number_int >> 8) & 0xFF)
+    return bytes([number_int & 0xFF, (number_int >> 8) & 0xFF])
 
 #--------------------------------------------------------------------------------------------
-def bytes2int(bytes):
+def bytes2int(data):
     ""
-    return ord(bytes[1]) * 256 + ord(bytes[0])
+    return _ord(data[1]) * 256 + _ord(data[0])
 
 #--------------------------------------------------------------------------------------------
 def int2hex_str(number_int16):
     ""
     res = '0x'
-    ph = int(number_int16) / 256
-    res = res + hd[ph/16]
-    res = res + hd[ph - ((ph/16) * 16)]
+    ph = int(number_int16) // 256
+    res = res + hd[ph >> 4]
+    res = res + hd[ph & 0x0F]
 
     pl = int(number_int16) - (ph * 256)
-    res = res + hd[pl/16]
-    res = res + hd[pl - ((pl/16) * 16)]
+    res = res + hd[pl >> 4]
+    res = res + hd[pl & 0x0F]
 
     return res
 
 #--------------------------------------------------------------------------------------------
-def str2unicode(string):
-    "converts ascii string to dumb unicode"
-    res = ''
-    for i in string:
-        res = res + i + '\000'
-    return res
+def str2unicode(data):
+    "converts ascii string to dumb unicode (utf-16le of the utf-8 bytes)"
+    if isinstance(data, str):
+        data = data.encode('utf-8')
+    res = bytearray()
+    for i in data:
+        res.append(_ord(i))
+        res.append(0)
+    return bytes(res)
 
