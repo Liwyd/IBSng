@@ -1,0 +1,22 @@
+# Python bytecode
+*.py[cod]
+__pycache__/
+
+# Test / tooling caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local environment
+.env
+.venv/
+venv/
+
+# Editor / OS noise
+*.swp
+*~
+.DS_Store
+
+# Installer artifacts
+install.log
+*.log
