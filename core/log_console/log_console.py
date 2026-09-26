@@ -6,7 +6,7 @@ import re
 
 class LogConsole:
     LOG_BUFFER_SIZE = 200 #number of log lines kept in buffer
-    capitalize_pattern = re.compile("\s[a-z]|^[a-z]")
+    capitalize_pattern = re.compile(r"\s[a-z]|^[a-z]")
     
     def __init__(self):
         self.__buffer = [] #(epoch_time, username, action, message)

@@ -1,6 +1,8 @@
 from core.lib.general import *
+from core.ibs_exceptions import logException, LOG_ERROR
 import os
-import imp
+import sys
+import importlib.util
 
 
 def init():
@@ -33,7 +35,7 @@ class PluginLoader:
         """
             call init function of all modules in "modules" dic
         """
-        for obj in modules.itervalues():
+        for obj in modules.values():
             try:
                 obj.init()
             except AttributeError: #no init defined
@@ -48,14 +50,21 @@ class PluginLoader:
         """
         modules={}
         for file_name in file_list:
-            file=None
             try:
                 module_name=file_name[:-3] #remove trailing .py
-                (file,pathname,desc)=imp.find_module(module_name,[directory])
-                modules[module_name]=imp.load_module(module_name,file,pathname,desc)
+                pathname=os.path.join(directory,file_name)
+                spec=importlib.util.spec_from_file_location(module_name,pathname)
+                if spec is None or spec.loader is None:
+                    raise ImportError("cannot load %s"%pathname)
+                module_object=importlib.util.module_from_spec(spec)
+                sys.modules[module_name]=module_object
+                try:
+                    spec.loader.exec_module(module_object)
+                except:
+                    sys.modules.pop(module_name,None)
+                    raise
+                modules[module_name]=module_object
             except:
-                if file!=None:
-                    file.close()
                 logException(LOG_ERROR,"PluginLoader.__loadModules")
         return modules
 
@@ -63,7 +72,7 @@ class PluginLoader:
         """
             return list of all .py files in directory
         """
-        return filter(lambda name: name.endswith(".py"),self.__getFilesList(directory))
+        return [name for name in self.__getFilesList(directory) if name.endswith(".py")]
 
     def __getFilesList(self,directory):
         """

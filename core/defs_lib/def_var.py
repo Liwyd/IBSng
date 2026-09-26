@@ -53,13 +53,13 @@ class RawDefVar:
         return self.value
 
     def castValue(self,_type):
-        if _type==types.IntType or _type==types.BooleanType:
+        if _type==int or _type==bool:
             self.value=to_int(self.value,self.name)
-        elif _type==types.StringType:
+        elif _type==bytes:
             self.value=to_str(self.value,self.name)
-        elif _type==types.ListType:
-            if type(self.value)==types.DictType:
-                self.value=self.value.values()
+        elif _type==list:
+            if type(self.value)==dict:
+                self.value=list(self.value.values())
             self.value=to_list(self.value,self.name)
         else:
             raise GeneralException("%s has unsupported type %s"%(self.name,_type))

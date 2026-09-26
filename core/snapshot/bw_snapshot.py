@@ -1,4 +1,5 @@
 from core.db import ibs_db,ibs_query
+from core import defs
 from core.user import user_main
 from core.ras import ras_main
 from core.lib.time_lib import *
@@ -23,7 +24,7 @@ class BWSnapShotOnlinesLoopClient(onlines_loop.OnlinesLoopClient):
             
                 user_id = user_obj.getUserID()
                 
-                if self.onlines_bw.has_key(user_id):
+                if user_id in self.onlines_bw:
                     self.onlines_bw[user_id][0] += in_rate
                     self.onlines_bw[user_id][1] += out_rate
                 else:

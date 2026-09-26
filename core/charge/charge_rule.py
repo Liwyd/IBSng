@@ -134,9 +134,9 @@ class ChargeRule:
             return False if this rule is not applicable for _time and user_obh
             otherwise returns applicability amount of this rule
         """
-	if secondsFromMorning(_time) == 23*3600+59*60+59:
-	    _time += 1
-	
+        if secondsFromMorning(_time) == 23*3600+59*60+59:
+            _time += 1
+        
         if not self.interval.containsTime(_time):
             return False
         return self.anytimeAppliable(user_obj, instance)

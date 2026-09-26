@@ -7,6 +7,7 @@
     after its last run
 """
 
+from core import defs
 from core.ibs_exceptions import *
 from core.event import event
 from core.lib import ibs_states
@@ -45,10 +46,10 @@ class DailyEvents:
         self.minute=minute
 
     def __repr__(self):
-	return str(self)
+        return str(self)
 
     def __str__(self):
-	return "Daily Events %s"%self.name
+        return "Daily Events %s"%self.name
 
     def checkLastRun(self):
         """
@@ -56,7 +57,7 @@ class DailyEvents:
             if it's more than 24 hours then do it now
         """
         state_obj=ibs_states.State(self.__state_name)
-        last_run=long(state_obj.getCurVal())
+        last_run=int(state_obj.getCurVal())
         if last_run < time.time() - secondsFromMorning():
             self.__doJobs()
             self.__updateLastRun()
@@ -66,7 +67,7 @@ class DailyEvents:
             update state value of last run
         """
         state_obj=ibs_states.State(self.__state_name)
-        state_obj.setValue(long(time.time()))
+        state_obj.setValue(int(time.time()))
                                                   
     def setNextDayEvent(self):
         """
@@ -102,7 +103,7 @@ class DailyEvents:
         
         for (function,args) in self.__jobs:
             try:
-                apply(function,args)
+                function(*args)
             except:
                 logException(LOG_ERROR,"dailyEvents: %s"%self.name)
         

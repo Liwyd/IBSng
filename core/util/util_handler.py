@@ -4,7 +4,7 @@ from core.lib.multi_strs import MultiStr
 import sys
 import os
 import traceback
-import imp
+import importlib.util
 
 class UtilHandler(handler.Handler):
     def __init__(self):
@@ -15,7 +15,7 @@ class UtilHandler(handler.Handler):
 
     def multiStrGetAll(self,request):
         request.checkArgs("str","left_pad")
-        return map(lambda x:x,MultiStr(request["str"],request["left_pad"]))
+        return [x for x in MultiStr(request["str"],request["left_pad"])]
 
     def runDebugCode(self,request):
         request.needAuthType(request.ADMIN)
@@ -24,7 +24,7 @@ class UtilHandler(handler.Handler):
         if not requester.isGod():
             return "Access Denied"
 
-        if request.has_key("no_output"):
+        if "no_output" in request:
             self.__execCode(request)
             return True
         else:
@@ -40,12 +40,12 @@ class UtilHandler(handler.Handler):
                 self.__execCode(request)
             except:
                 (_type,value,tback)=sys.exc_info()
-                print "".join(traceback.format_exception(_type, value, tback))
+                print("".join(traceback.format_exception(_type, value, tback)))
             
             sys.stdout.flush()
             os._exit(0)
         else:
-            out = ""
+            out = b""
 
             while True:
                 (exit_pid, exit_status) = os.waitpid(pid, os.WNOHANG)
@@ -58,19 +58,25 @@ class UtilHandler(handler.Handler):
                 if exit_pid == pid:
                     break
 
-            return out
+            return out.decode("utf-8",errors="replace")
 
 
 
     def __execCode(self, request):
-        if request.has_key("read_from_file"):
+        if "read_from_file" in request:
             module_name = os.path.basename(request["command"])[:-3]
             directory = os.path.dirname(request["command"])
-            (file,pathname,desc)=imp.find_module(module_name,[directory])
-            imp.load_module(module_name,file,pathname,desc)
-
-#           __import__(request["command"])
-#           exec( open(request["command"]).read(os.stat(request["command"])[6]) )
+            pathname = os.path.join(directory,module_name+".py")
+            spec = importlib.util.spec_from_file_location(module_name,pathname)
+            if spec is None or spec.loader is None:
+                raise ImportError("cannot load %s"%pathname)
+            module_object = importlib.util.module_from_spec(spec)
+            sys.modules[module_name] = module_object
+            try:
+                spec.loader.exec_module(module_object)
+            except:
+                sys.modules.pop(module_name,None)
+                raise
         else:
             exec( request["command"] )
 

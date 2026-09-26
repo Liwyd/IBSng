@@ -27,8 +27,8 @@ class BWActions:
 
     def getSubTree(self,node_id):
         node_obj=bw_main.getLoader().getNodeByID(node_id)
-        children=map(lambda child:self.getSubTree(child),node_obj.getChildren())
-        leaf_children=map(lambda leaf:bw_main.getLoader().getLeafByID(leaf).getLeafName(),node_obj.getLeafChildren())
+        children=[self.getSubTree(child) for child in node_obj.getChildren()]
+        leaf_children=[bw_main.getLoader().getLeafByID(leaf).getLeafName() for leaf in node_obj.getLeafChildren()]
         return [node_id,children,leaf_children]
 
     ##############################################
@@ -176,7 +176,7 @@ class BWActions:
         return db_main.getHandle().seqNextVal("bw_leaf_services_leaf_service_id_seq")
 
     def __parseFilter(self,_filter):
-        sp=re.split("\s+",_filter)
+        sp=re.split(r"\s+",_filter)
         if len(sp)!= 2:
             raise GeneralException(errorText("BANDWIDTH","INVALID_FILTER")%_filter)
         return sp[0],",".join(MultiStr(sp[1],False))

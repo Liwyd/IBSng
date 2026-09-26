@@ -1,9 +1,8 @@
 import re
-import string
 import time
 import sys
 import traceback
-import imp
+import importlib
 import types
 from core.ibs_exceptions import *
 from core.errors import errorText
@@ -13,7 +12,7 @@ def isValidName(name):
         check if "name" is valid, names can contain alphanumerics and "_" character
         return True if name is valid and False if it's not
     """
-    return len(name) != 0 and re.search("[^a-zA-Z0-9_\-]",name)==None 
+    return len(name) != 0 and re.search(r"[^a-zA-Z0-9_\-]",name)==None 
 
 ###############################
 # SQL text escaping lives in core.lib.sql_escape (shared with defs2sql).
@@ -37,8 +36,8 @@ def requestDicToList(var):
         some xml implementions return dictionaries even the unserialized data was in array.
         This function convert it to list if it's a dic
     """
-    if type(var)==types.DictType:
-        return var.values()
+    if type(var)==dict:
+        return list(var.values())
     else:
         return var
 
@@ -52,7 +51,7 @@ def integer(_str):
     if _str.count("."):
         _str = _str[:_str.index(".")]
     try:
-        num=string.atoi(_str)
+        num=int(_str)
     except:
         return 0
     return num
@@ -63,7 +62,7 @@ def isInt(var):
         check if "var" type is integer
         return 1 if it's an integer or 0 if it's not
     """
-    if type(var)==types.IntType:
+    if type(var)==int:
         return True
     return False
 
@@ -72,7 +71,7 @@ def isLong(var):
         check if "var" type is Long
         return 1 if it's long or 0 if it's not
     """
-    if type(var)==types.LongType:
+    if type(var)==int:
         return True
     return False
 
@@ -81,7 +80,7 @@ def isFloat(var):
         check if "var" type is flot
         return 1 if it's an flot or 0 if it's not
     """
-    if type(var)==types.FloatType:
+    if type(var)==float:
         return True
     return False
 
@@ -94,7 +93,7 @@ def to_int(_str,excp):
     try:
         _int=int(_str)
     except:
-        if type(excp)==types.StringType:
+        if type(excp)==str:
             raise GeneralException(errorText("GENERAL","INVALID_INT_VALUE")%excp)
         else:
             raise excp
@@ -106,9 +105,9 @@ def to_long(_str,excp):
         excp(str or Exception instance): raise this exception if _str is not convertable to long
     """
     try:
-        _long=long(_str)
+        _long=int(_str)
     except:
-        if type(excp)==types.StringType:
+        if type(excp)==str:
             raise GeneralException(errorText("GENERAL","INVALID_INT_VALUE")%excp)
         else:
             raise excp
@@ -148,7 +147,7 @@ def to_list(obj,var_name):
 
 ##################################
 
-email_address_check_pattern = re.compile('(^[a-zA-Z0-9][a-zA-Z0-9._\-]*)@([a-zA-Z0-9_\-]+\.[a-zA-Z0-9._\-]+)$')
+email_address_check_pattern = re.compile(r'(^[a-zA-Z0-9][a-zA-Z0-9._\-]*)@([a-zA-Z0-9_\-]+\.[a-zA-Z0-9._\-]+)$')
 def checkEmailAddress(email_address):
     """
         check email address, raise an exception if it's invalid
@@ -169,8 +168,7 @@ def import_module(module_name,_globals):
         it's necassary because some module import ibs_server and we can't import them 
         on top of file because they import us and we import them and python interpreter stops importing out file """
         
-    (file,pathname,description)=imp.find_module(module_name)
-    module_object=imp.load_module(module_name,file,pathname,description)
+    module_object = importlib.import_module(module_name)
     _globals[module_name]=module_object
 
 
@@ -196,10 +194,10 @@ def fixXMLRPCList(_dic):
         if keys are all string representing integers and has all necessary indexes convert it
         to list else return the _dic itself
     """
-    dic_keys=_dic.keys()
+    dic_keys=list(_dic.keys())
     dic_keys.sort()
-    if map(str,range(len(_dic)))==dic_keys:
-        return map(_dic.get,map(str,range(len(_dic))))
+    if list(map(str,list(range(len(_dic)))))==dic_keys:
+        return list(map(_dic.get,list(map(str,list(range(len(_dic)))))))
     else:
         return _dic
         

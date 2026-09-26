@@ -23,7 +23,7 @@ class ibs_db: #abstract parent class for all db implementions. Children must imp
                           ["bigint"]*defs.POSTGRES_MAGIC_NUMBER,
                           "select * from %s where %s"%
                            (table_name, \
-                            " or ".join(map(lambda i:"user_id=int8($%s)"%i,xrange(1,defs.POSTGRES_MAGIC_NUMBER+1))) \
+                            " or ".join(["user_id=int8($%s)"%i for i in range(1,defs.POSTGRES_MAGIC_NUMBER+1)]) \
                            ))
 
         
@@ -70,7 +70,7 @@ class ibs_db: #abstract parent class for all db implementions. Children must imp
         """
         try:
             return self._runQuery(command)
-        except Exception,e:
+        except Exception as e:
             raise ibs_exceptions.DBException("%s query: %s" %(e,command))
 
 
@@ -130,9 +130,9 @@ class ibs_db: #abstract parent class for all db implementions. Children must imp
         return self.selectQuery(query)
 
     def __createOrderBy(self,order_by):
-        if type(order_by)==types.StringType:
+        if type(order_by)==str:
             return order_by
-        elif type(order_by)==types.TupleType:
+        elif type(order_by)==tuple:
             if order_by[1]:     
                 desc="desc"
             else:
@@ -205,8 +205,8 @@ def createInsertQuery(table,dict_values):
     if len(dict_values)==0:
         raise DBException("Empty values for insert")
     
-    names="("+",".join(dict_values.keys())+")"
-    values="("+",".join(map(str,dict_values.values()))+")"
+    names="("+",".join(list(dict_values.keys()))+")"
+    values="("+",".join(map(str,list(dict_values.values())))+")"
     return "insert into %s %s VALUES %s ;"%(table,names,values)
 
 
@@ -217,7 +217,7 @@ def createUpdateQuery(table,dict_values,condition):
     """
     if len(dict_values)==0:
         raise DBException("Empty values for update")
-    set_list=map(lambda name:"%s = %s"%(name,dict_values[name]),dict_values)
+    set_list=["%s = %s"%(name,dict_values[name]) for name in dict_values]
     query="update %s set %s where %s ;" % (table,",".join(set_list),condition)
     return query 
 

@@ -51,7 +51,7 @@ class Time:
             return completed time_str on success
         """
         time_str=self.__completeTime(time_str)
-        (hour,minute,second)=map(int,time_str.split(":"))
+        (hour,minute,second)=list(map(int,time_str.split(":")))
         if hour>24 or hour<0 or minute>60 or minute<0 or second>60 or second<0:
             raise GeneralException(errorText("GENERAL","TIME_OUT_OF_RANGE"))
         return (time_str,hour,minute,second)
@@ -78,7 +78,7 @@ class Time:
 
 
 ############################################
-radius_time_parse_pattern=re.compile("[\.\*]?(\d+:\d+:\d+)\.\d+ (\w+ \w+ \w+ \d+ \d+)")
+radius_time_parse_pattern=re.compile(r"[\.\*]?(\d+:\d+:\d+)\.\d+ (\w+ \w+ \w+ \d+ \d+)")
 def getEpochFromRadiusTime(rad_time):
     """
         return epoch from radius time eg. 04:34:58.000 IRDT Thu Apr 14 2005
@@ -135,7 +135,7 @@ def formatDuration(duration_seconds):
 #************************** NOT TESTED
 
 def dbTimeToEpoch(dbTime):
-    return time.mktime(dbTimeToList(dbTime))
+    return time.mktime(tuple(dbTimeToList(dbTime)))
 
 def dbTimeToList(dbTime):
     """
@@ -164,7 +164,7 @@ def getEpochTimeFromHourOfDay(hour,_min=0,sec=0,dayToAdd=0):
     tm[5]=sec
     tm[2]+=dayToAdd
     
-    return time.mktime(tm)
+    return time.mktime(tuple(tm))
 
 def epochTimeFromRadiusTime(rad_time):
     sp=rad_time.split()
@@ -174,7 +174,7 @@ def epochTimeFromRadiusTime(rad_time):
 
     time_list=list(time.strptime(formatted_time,'%Y %b %d %H:%M:%S'))
     time_list[8]=-1 #daylight saving flag
-    epoch=time.mktime(time_list)
+    epoch=time.mktime(tuple(time_list))
     return epoch
 
 def epochTimeFromRadiusUTCTime(rad_time):

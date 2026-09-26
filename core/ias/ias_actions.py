@@ -1,4 +1,5 @@
 from core.db import db_main,ibs_db,ibs_query
+from core import defs
 from core.lib.general import *
 from core.lib import report_lib
 

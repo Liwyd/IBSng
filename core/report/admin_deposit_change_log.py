@@ -24,15 +24,15 @@ class AdminDepositChangeLogsSearchHelper(SearchHelper):
         cond = self.getTable("admin_deposit_change").getRootGroup().getConditionalClause()
         total_rows = self.__getTotalResultsCount(cond)
 
-	if total_rows == 0:
-	    return (0, 0, [])
+        if total_rows == 0:
+            return (0, 0, [])
 
         result = self.__getResult(cond, _from, to, order_by, desc)
         if self.hasCondFor("show_total_deposit_change"):
             total_change_deposit = self.__getTotalDepositChangeSum(cond, _from, to)
         else:
-    	    total_change_deposit = 0
-    	    
+            total_change_deposit = 0
+            
         return (total_rows, total_change_deposit, self.__createReportResult(result, date_type))
 
 

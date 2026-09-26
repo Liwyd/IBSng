@@ -73,11 +73,11 @@ class VoIPRas:
 
 
     def fixCreditPrecision(self, credit, precision):
-    	if precision:
-	    factor = float(10**precision)
-    	    return "%.2f"%(int(round(credit*factor))/factor)
-    	else:
-    	    return int(credit)
+        if precision:
+            factor = float(10**precision)
+            return "%.2f"%(int(round(credit*factor))/factor)
+        else:
+            return int(credit)
 
 
     def setH323PreferredLanguage(self,reply_pkt,language_code):
@@ -85,7 +85,7 @@ class VoIPRas:
 	    Set preferred language to two char language code ex ("en","ch","sp","ru","fa",...)
         """
         reply_pkt["H323-preferred-lang"]="h323-preferred-lang=%s"%language_code
-	
+        
     def getAttrInCiscoAVPair(self, attr_name, pkt):
         """
             return value of "attr_name" in Cisco-AVPair attribute of "pkt"

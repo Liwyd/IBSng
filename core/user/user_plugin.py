@@ -55,7 +55,7 @@ class UserPlugin(BaseUserPlugin):
         pass
 
     def update(self,ras_msg):
-	"""
+        """
 	
 	"""
         pass
@@ -174,7 +174,7 @@ class UserPluginManager:
             for user plugins we'll create an object of plugin and put it
             in user_obj with the name of plugin
         """
-        for (plugin_class,plugin_name) in apply(itertools.chain,self.__plugin_classes):
+        for (plugin_class,plugin_name) in itertools.chain(*self.__plugin_classes):
             try:
                 setattr(user_obj,plugin_name,plugin_class(user_obj))
             except:

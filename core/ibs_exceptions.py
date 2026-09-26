@@ -1,9 +1,9 @@
 import traceback
 import time
-import defs
+import os
 import sys
 import signal
-from core.ibs_logger import Logger
+from core.ibs_logger import Logger, LOG_DIR
 
 LOG_DEBUG=1
 LOG_ERROR=2
@@ -14,18 +14,20 @@ LOG_CONSOLE=32
 
 def init():
     global debug_log_handle, error_log_handle, radius_log_handle, server_log_handle, query_log_handle, console_log_handle
-    debug_log_handle=Logger("/var/log/IBSng/ibs_debug.log")
-    error_log_handle=Logger("/var/log/IBSng/ibs_error.log")
-    radius_log_handle=Logger("/var/log/IBSng/ibs_radius.log")
-    server_log_handle=Logger("/var/log/IBSng/ibs_server.log")
-    query_log_handle=Logger("/var/log/IBSng/ibs_queries.log")
-    console_log_handle=Logger("/var/log/IBSng/ibs_console.log")
+    os.makedirs(LOG_DIR, exist_ok=True)
+    debug_log_handle=Logger(LOG_DIR+"/ibs_debug.log")
+    error_log_handle=Logger(LOG_DIR+"/ibs_error.log")
+    radius_log_handle=Logger(LOG_DIR+"/ibs_radius.log")
+    server_log_handle=Logger(LOG_DIR+"/ibs_server.log")
+    query_log_handle=Logger(LOG_DIR+"/ibs_queries.log")
+    console_log_handle=Logger(LOG_DIR+"/ibs_console.log")
 
     setReOpenSignalHandler()
 
 ##################################
 
 def toLog(_str,log_file,debug_level=0,add_stack=0): 
+    from core import defs
     """
         log _str to a log file that explained by log_file
         if IBS debug_level is more than debug_level
@@ -115,6 +117,7 @@ class IBSException(Exception):
 
 class PermissionException (Exception):
     def __init__(self,str_error):
+        from core import defs
         toLog("PermissionException: %s"%str_error,LOG_DEBUG,defs.DEBUG_ALL)
         self.str_error=str_error
 
@@ -154,6 +157,7 @@ class RSHException (Exception):
 
 class IBSError(Exception):
     def __init__(self,str_error):
+        from core import defs
         self.str_error=str_error
     
         if(defs.DEBUG_LEVEL>=defs.DEBUG_ALL):

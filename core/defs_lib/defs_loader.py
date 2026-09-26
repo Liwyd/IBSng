@@ -8,15 +8,18 @@ class DefsLoader:
         return self.def_vars[key]
         
     def has_key(self,key):
-        return self.def_vars.has_key(key)
+        return key in self.def_vars
+
+    def __contains__(self,key):
+        return key in self.def_vars
 
     def setGlobalsDic(self,globals_dic):
         self.globals_dic=globals_dic
         
     def loadAll(self):
         defs=self.__getAllDefValues()
-        map(self.__createDefVarObjs,defs)
-        map(self.__setGlobalVars,self.def_vars)
+        list(map(self.__createDefVarObjs,defs))
+        list(map(self.__setGlobalVars,self.def_vars))
         
     def getAllVars(self):
         return self.def_vars

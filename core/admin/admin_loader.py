@@ -16,7 +16,7 @@ class AdminLoader:
             return self.getAdminByName(key)
     
     def __iter__(self):
-        return self.admins_id.iterkeys()
+        return iter(list(self.admins_id.keys()))
 
     def getAdminByID(self,admin_id):
         try:
@@ -35,11 +35,11 @@ class AdminLoader:
         if not isInt(admin_id):
             raise GeneralException(errorText("ADMIN","ADMIN_ID_INVALID")%admin_id)
         
-        if not self.admins_id.has_key(admin_id):
+        if admin_id not in self.admins_id:
             raise GeneralException(errorText("ADMIN","ADMIN_ID_INVALID")%admin_id)
     
     def checkAdminName(self,admin_name):
-        if not self.admins_name.has_key(admin_name):
+        if admin_name not in self.admins_name:
             raise GeneralException(errorText("ADMIN","ADMIN_USERNAME_INVALID")%admin_name)
     
     
@@ -49,14 +49,14 @@ class AdminLoader:
             return 1 if it's available(no other admin has this name)
             return 0 if it's not available(another admin has this name)
         """
-        return not self.admins_name.has_key(admin_name)
+        return admin_name not in self.admins_name
 
 
     def getAllUsernames(self):
         """
             return a list of all admin usernames
         """
-        return self.admins_name.keys()
+        return list(self.admins_name.keys())
         
     def loadAdmin(self,admin_id):
         """
@@ -79,7 +79,7 @@ class AdminLoader:
             load all of admins available in "admin" table
         """
         admin_ids=self.__getAllAdminIDs()
-        map(self.loadAdmin,admin_ids)
+        list(map(self.loadAdmin,admin_ids))
         
     def unLoadAdmin(self, admin_id):
         """
@@ -126,7 +126,7 @@ class AdminLoader:
             retrieve locks of admin with id "admin_id" and return a list of AdminLock instances 
         """
         locks=self.__getAdminLocksDB(admin_id)
-        return map(self.__createAdminLockObj,locks)
+        return list(map(self.__createAdminLockObj,locks))
 
     def __createAdminLockObj(self,lock_dic):
         """

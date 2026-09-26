@@ -15,6 +15,7 @@ ASCII-only text), so this tool pickles with protocol 0 and escapes through
 core.lib.sql_escape.dbText - the same escaping the runtime uses.
 """
 import importlib.util
+from core import defs
 import os
 import pickle
 import sys
@@ -38,7 +39,7 @@ def loadDefs(python_file):
         raise SystemExit("defs2sql.py: can not load %s" % python_file)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return dict((name, value) for name, value in vars(module).items()
+    return dict((name, value) for name, value in list(vars(module).items())
                 if not name.startswith("__") and not callable(value))
 
 

@@ -1,7 +1,7 @@
 import traceback
 import sys
 import time
-import ibs_exceptions
+from core import ibs_exceptions
 from core.lib.general import *
 
 SHUTDOWN=False
@@ -85,14 +85,14 @@ def init():
     import radius_server.rad_main
     radius_server.rad_main.init()
     
-    import snapshot.snapshot_main
-    snapshot.snapshot_main.init()
+    from core.snapshot import snapshot_main
+    snapshot_main.init()
 
-    import message.message_main
-    message.message_main.init()
+    from core.message import message_main
+    message_main.init()
 
-    import web_analyzer.web_analyzer_main
-    web_analyzer.web_analyzer_main.init()
+    from core.web_analyzer import web_analyzer_main
+    web_analyzer_main.init()
     
     ibs_exceptions.toLog("Starting server",ibs_exceptions.LOG_DEBUG)
     server.startServer()    

@@ -16,7 +16,8 @@ LOG_SERVER_REQUESTS=True #LOG server requests in /var/log/IBSng/ibs_server.log, 
 LOG_DATABASE_QUERIES=True #LOG every query we send to database
 LOG_EVENTS=False #LOG every event that event schedueler runs
 
-IBS_ROOT="/usr/local/IBSng"
+import os as _os
+IBS_ROOT=_os.environ.get("IBS_ROOT") or _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
 IBS_CORE="%s/core"%IBS_ROOT
 IBS_ADDONS="%s/addons/"%IBS_ROOT
 

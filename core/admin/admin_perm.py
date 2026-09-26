@@ -54,7 +54,7 @@ class AdminPermission:
             additional *args are used in situations where they are needed
             (ex. username where adding a new user)
         """
-        return apply(self.perm_obj.check,[self.admin_obj,self]+list(args))
+        return self.perm_obj.check(*[self.admin_obj,self]+list(args))
     
     
     def __parseValue(self,perm_value):
@@ -147,7 +147,7 @@ class Permission:
         self.description=self.__formatDescription(description)
         
     def __formatDescription(self,description):
-        return re.sub("\n[\s\t]*"," \n",description) #delete space and tabs on start of lines
+        return re.sub(r"\n[\s\t]*"," \n",description) #delete space and tabs on start of lines
         
     def addAffectedPage(self,*args):
         for affected_page in args:

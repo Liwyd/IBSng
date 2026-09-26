@@ -2,6 +2,7 @@
     tc command line wrapper
 """
 import re
+from core import defs
 from core.ibs_exceptions import *
 from core.script_launcher import launcher_main
 

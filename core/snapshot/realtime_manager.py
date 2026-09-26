@@ -1,4 +1,5 @@
 from core.event import periodic_events
+from core import defs
 from core.errors import errorText
 from core.ibs_exceptions import *
 from core.snapshot import snapshot_main,snapshot_defs
@@ -15,7 +16,7 @@ class RealTimeManager:
         self.snapshots[snapshot_obj.getName()]=snapshot_obj
         
     def updateAll(self):
-        for snapshot in self.snapshots.values():
+        for snapshot in list(self.snapshots.values()):
             try:
                 snapshot.update()
             except:

@@ -1,4 +1,5 @@
 from core.snapshot.realtime_snapshot import SnapShot
+from core import defs
 from core.snapshot.onlines_loop import OnlinesLoopClient
 from core.snapshot import snapshot_main, snapshot_defs
 from core.user import user_main

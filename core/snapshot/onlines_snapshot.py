@@ -1,4 +1,5 @@
 from core.db import ibs_db,ibs_query
+from core import defs
 from core.user import user_main
 from core.ras import ras_main
 from core.lib.time_lib import *
@@ -61,7 +62,7 @@ class OnlinesSnapShotOnlinesLoopClient(onlines_loop.OnlinesLoopClient):
         return _dic
 
     def __filterZeroValues(self, _dic):
-        for ras_id in _dic.keys():
+        for ras_id in list(_dic.keys()):
             if _dic[ras_id] == 0:
                 del(_dic[ras_id])
         return _dic

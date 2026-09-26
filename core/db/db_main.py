@@ -25,7 +25,7 @@ class DBHandleQuery:
         if not self.hasDedicatedHandle():
             self.allocateHandle()
         try:
-            return apply(getattr(self.__handle,self.method_name),args)
+            return getattr(self.__handle,self.method_name)(*args)
         finally:
             if not self.hasDedicatedHandle():
                 self.releaseHandle()

@@ -45,23 +45,23 @@ class Admin:
                 "deposit":self.deposit,
                 "creator_id":self.creator_id,
                 "creator":admin_main.getLoader().getAdminByID(self.creator_id).getUsername(),
-                "locks":map(lambda lock_obj:lock_obj.getLockInfo(),self.locks),
+                "locks":[lock_obj.getLockInfo() for lock_obj in self.locks],
                 "last_request_ip":self.activity_status["last_request_ip"],
                 "last_activity":self.__getAdminLastActivity(date_type),
                 "online_status":self.__getOnlineStatus()
                 }
     
     def __getOnlineStatus(self):
-	"""
+        """
 	    return True if admin had an activity in last 15 minutes
 	"""
         if time.time() - self.activity_status["last_activity"] > 900: # more than 15 min
             return False
-	    
+            
         return True
     
     def __getAdminLastActivity(self,date_type):
-	"""
+        """
 	    return admin last activity in epoch time
 	    0 if admin hadn't any request from start of IBSng
 	"""
@@ -95,7 +95,7 @@ class Admin:
             "args", permissions raise a PermissionException on access denied conditions
         """
         try:
-            return apply(self.perms[perm_name].check,args)
+            return self.perms[perm_name].check(*args)
         except KeyError:
             raise PermissionException(errorText("PERMISSION","DONT_HAVE_PERMISSION"))
         except IndexError:
@@ -107,7 +107,7 @@ class Admin:
             check if this admin --JUST HAS-- permission "perm_name" regardless of enviroment and 
             permission values. To check a permission use checkPerm instead.
         """
-        return self.perms.has_key(perm_name)
+        return perm_name in self.perms
 
     def canDo(self,perm_name,*args):
         """
@@ -118,7 +118,7 @@ class Admin:
         """
         if self.isGod():
             return 
-        apply(self.checkPerm,[perm_name]+list(args))
+        self.checkPerm(*[perm_name]+list(args))
         
 
     def isGod(self):
@@ -193,8 +193,8 @@ class Admin:
 
     #############################
     def checkServerAuth(self, auth_pass, remote_addr):
-        self.__updateActivity(remote_addr, long(time.time()))
-	self.checkAuth(auth_pass, remote_addr)
+        self.__updateActivity(remote_addr, int(time.time()))
+        self.checkAuth(auth_pass, remote_addr)
 
     def __updateActivity(self, last_ip, last_update):
         self.activity_status["last_request_ip"], self.activity_status["last_activity"] = last_ip, last_update
