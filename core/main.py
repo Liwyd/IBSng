@@ -126,7 +126,7 @@ def mainThreadShutdown():
     """
         we must call this in main event loop(main thread)
     """
-    ibs_exceptions.toLog("Shutting down @ %s"%time.localtime(),ibs_exceptions.LOG_DEBUG)
+    ibs_exceptions.toLog("Shutting down @ %s"%(time.localtime(),),ibs_exceptions.LOG_DEBUG)
 
     from core.threadpool import thread_main
     thread_main.getThreadPool().logThreads()    

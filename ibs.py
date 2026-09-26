@@ -50,7 +50,7 @@ def logToSysLog(err_text):
     syslog.closelog()
 
 def writePID(pid):
-    fp = open('/var/run/IBSng.pid','w+')
+    fp = open('/run/IBSng.pid','w+')
     fp.write(str(pid))
     fp.close()
 

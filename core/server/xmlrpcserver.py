@@ -70,6 +70,9 @@ class XMLRPCRequestHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
         else:
             # got a valid XML RPC response
+            if isinstance(response, str):
+                # py3: wfile expects bytes (dumps() returns str)
+                response = response.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-type", "text/xml")
             self.send_header("Content-length", str(len(response)))
@@ -119,9 +122,10 @@ class XMLRPCRequestHandler(http.server.BaseHTTPRequestHandler):
         elif type(param)==list or type(param)==tuple:
             param=list(map(self.__convToUTF8,param))
 
-        elif type(param)==str:
-            param=param.encode("utf-8")
-        
+        elif type(param)==bytes:
+            # py3: keep text as str (was py2 encode("utf-8")); decode raw bytes
+            param=param.decode("utf-8")
+
         return param
 
     def log_request(self, code='-', size='-'):
@@ -166,4 +170,8 @@ class XMLRPCServer(IBSServer):
         self.funcs = {}
         self.instance = None
         socketserver.TCPServer.__init__(self, addr, requestHandler)
+        # poll accept() once a second so the custom serve_forever loop
+        # (which checks main.isShuttingDown() between requests) can exit
+        # during shutdown without needing a self-call
+        self.timeout = 1
 

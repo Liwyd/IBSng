@@ -2,7 +2,6 @@ from core.server import handlers_manager,xmlrpcserver
 from core.threadpool import thread_main
 from core.stats import stat_main
 from core import defs
-import xmlrpc.client
 
 def init():
     global server, server_started
@@ -24,9 +23,8 @@ def startServer():
 def shutdown():
     if not server_started:
         return
-        
-    try:
-        server=xmlrpc.client.ServerProxy("http://%s:%s"%(defs.IBS_SERVER_IP,defs.IBS_SERVER_PORT))
-        getattr(server,"exit")()
-    except:
-        pass
+    # no self-call needed (and none possible): requests are dropped while
+    # shutting down, so a ServerProxy self-call would block forever.
+    # serve_forever polls accept() every second (XMLRPCServer.timeout) and
+    # exits as soon as main.isShuttingDown() is set.
+    pass

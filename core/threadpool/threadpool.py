@@ -181,7 +181,7 @@ class ThreadPool:
         
             bak=copy.copy(self.__in_use)
             for thread in bak:
-                if not thread.isAlive():
+                if not thread.is_alive():
                     self.__delFromInUse(thread)
                     thread.join()
     
