@@ -1,82 +1,455 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# IBSng interactive, idempotent installer.
+#
+#   Ubuntu 24.04 / Debian (apt)  - first class
+#   EL 8/9/10 (dnf)              - best effort
+#
+# Every step checks current state before acting, so re-running the script
+# converges a host instead of failing halfway. Run as root:
+#
+#   sudo ./install.sh            # interactive
+#   sudo ./install.sh --yes      # accept all defaults (CI)
+#
+set -euo pipefail
 
-# Check if the script is running as root
-if [ "$EUID" -ne 0 ]; then
-  echo "Please run this script as root."
-  exit 1
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ASSUME_YES=0
+ENABLE_OPENVPN=""
+ENABLE_FIREWALL=""
+
+info()  { printf '\033[1;32m[ IB ]\033[0m %s\n' "$*"; }
+warn()  { printf '\033[1;33m[WARN]\033[0m %s\n' "$*"; }
+die()   { printf '\033[1;31m[FAIL]\033[0m %s\n' "$*" >&2; exit 1; }
+
+usage() {
+    cat <<'EOF'
+usage: install.sh [--yes] [--help]
+
+  --yes, -y   non-interactive: accept all defaults
+  --help, -h  show this help
+
+defaults: prefix /usr/local/IBSng, db password ibsdbpass,
+          admin password "system", openvpn off, firewall rules off
+EOF
+}
+
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes) ASSUME_YES=1 ;;
+        -h|--help) usage; exit 0 ;;
+        *) usage >&2; die "unknown argument: $arg" ;;
+    esac
+done
+
+[ "$(id -u)" -eq 0 ] || die "please run this script as root (sudo ./install.sh)"
+
+# ---------------------------------------------------------------- distro
+if [ -r /etc/os-release ]; then
+    . /etc/os-release
+else
+    die "/etc/os-release not found - unsupported system"
+fi
+PKG_MGR=""
+case "${ID:-}" in
+    ubuntu|debian|raspbian) PKG_MGR=apt ;;
+    fedora|rhel|centos|rocky|almalinux) PKG_MGR=dnf ;;
+    *)
+        warn "distro '${ID:-unknown}' not explicitly supported"
+        if command -v apt-get >/dev/null 2>&1; then PKG_MGR=apt
+        elif command -v dnf >/dev/null 2>&1; then PKG_MGR=dnf
+        else die "no supported package manager found"
+        fi
+        ;;
+esac
+info "distro: ${PRETTY_NAME:-$ID}, package manager: $PKG_MGR"
+
+# ---------------------------------------------------------------- prompts
+prompt() { # prompt VAR "question" "default"
+    local __var="$1" __q="$2" __default="$3" __answer=""
+    if [ "$ASSUME_YES" -eq 1 ]; then
+        __answer="$__default"
+    else
+        read -r -p "$__q [$__default]: " __answer || true
+        [ -n "$__answer" ] || __answer="$__default"
+    fi
+    printf -v "$__var" '%s' "$__answer"
+}
+
+prompt_secret() { # prompt_secret VAR "question" "default"
+    local __var="$1" __q="$2" __default="$3" __answer=""
+    if [ "$ASSUME_YES" -eq 1 ]; then
+        __answer="$__default"
+    else
+        read -r -s -p "$__q [$__default]: " __answer || true
+        echo
+        [ -n "$__answer" ] || __answer="$__default"
+    fi
+    printf -v "$__var" '%s' "$__answer"
+}
+
+prompt PREFIX     "Install prefix"                 "/usr/local/IBSng"
+prompt DB_PASS    "PostgreSQL password for role ibs" "ibsdbpass"
+prompt_secret ADMIN_PASS "Web admin password for user 'system'" "system"
+case "$DB_PASS" in
+    *"'"*|*"\\"*) die "database password must not contain single quotes or backslashes" ;;
+esac
+
+if [ "$ASSUME_YES" -eq 0 ]; then
+    prompt ENABLE_OPENVPN "Install and wire OpenVPN accounting? (y/n)" "n"
+    prompt ENABLE_FIREWALL "Open firewall ports 80/tcp, 1812/udp, 1813/udp? (y/n)" "n"
+fi
+ENABLE_OPENVPN="${ENABLE_OPENVPN:-n}"
+ENABLE_FIREWALL="${ENABLE_FIREWALL:-n}"
+
+# ---------------------------------------------------------------- source tree
+if [ -f "$SRC_DIR/ibs.py" ]; then
+    SOURCE="$SRC_DIR"
+else
+    info "no local source tree next to install.sh - cloning repository"
+    TMP_CLONE="$(mktemp -d /tmp/ibsng-src.XXXXXX)"
+    git clone --depth 1 https://github.com/Liwyd/IBSng.git "$TMP_CLONE"
+    SOURCE="$TMP_CLONE"
 fi
 
-# Check if the OS is CentOS 7
-if ! grep -q "CentOS Linux release 7" /etc/centos-release; then
-  echo "IBSng can only be installed on CentOS 7."
-  exit 1
+# ---------------------------------------------------------------- packages
+python3 -c 'import pg' >/dev/null 2>&1 && HAVE_PG_PY=1 || HAVE_PG_PY=0
+
+install_packages_apt() {
+    local wanted=("$@") missing=()
+    export DEBIAN_FRONTEND=noninteractive
+    local pkg
+    for pkg in "${wanted[@]}"; do
+        dpkg -s "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+        info "installing packages: ${missing[*]}"
+        apt-get update -qq
+        apt-get install -y -qq "${missing[@]}"
+    else
+        info "all required packages already installed"
+    fi
+}
+
+install_packages_dnf() {
+    local wanted=("$@") missing=()
+    local pkg
+    for pkg in "${wanted[@]}"; do
+        rpm -q "$pkg" >/dev/null 2>&1 || missing+=("$pkg")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+        info "installing packages: ${missing[*]} (best effort on EL)"
+        dnf install -y "${missing[@]}" || warn "some packages failed - check output"
+    else
+        info "all required packages already installed"
+    fi
+}
+
+if [ "$PKG_MGR" = apt ]; then
+    PACKAGES=(postgresql rsync curl ca-certificates
+              apache2 php-cli libapache2-mod-php php-gd php-xml php-mbstring)
+    if [ "$ENABLE_OPENVPN" = y ]; then PACKAGES+=(openvpn); fi
+    install_packages_apt "${PACKAGES[@]}"
+    # PyGreSQL: distro package first, pip fallback (Ubuntu is PEP 668 managed)
+    if [ "$HAVE_PG_PY" -eq 0 ]; then
+        install_packages_apt python3-pygresql || true
+        if ! python3 -c 'import pg' >/dev/null 2>&1; then
+            info "installing PyGreSQL via pip"
+            install_packages_apt python3-pip python3-dev libpq-dev build-essential
+            pip3 install --quiet --break-system-packages PyGreSQL
+        fi
+    fi
+else
+    PACKAGES=(postgresql-server rsync curl git httpd php php-gd php-xml php-mbstring python3)
+    if [ "$ENABLE_OPENVPN" = y ]; then PACKAGES+=(openvpn); fi
+    install_packages_dnf "${PACKAGES[@]}"
+    if [ "$HAVE_PG_PY" -eq 0 ]; then
+        install_packages_dnf python3-pygresql || true
+        if ! python3 -c 'import pg' >/dev/null 2>&1; then
+            warn "PyGreSQL not available from dnf - trying pip"
+            dnf install -y python3-pip libpq-devel gcc python3-devel || true
+            pip3 install --quiet PyGreSQL || die "cannot install PyGreSQL"
+        fi
+    fi
 fi
+python3 -c 'import pg' >/dev/null 2>&1 || die "PyGreSQL (import pg) unavailable"
 
-# Check if SELinux is enabled and prompt the user to disable it
-if [ "$(getenforce)" != "Permissive" ]; then
-  echo "SELinux is enabled. Please run the following commands to disable it and then rerun this script:"
-  echo "setenforce 0"
-  echo "sed -i 's/enforcing/disabled/g' /etc/selinux/config"
-  exit 1
-fi
+# ---------------------------------------------------------------- postgres
+psql_as_postgres() {
+    if command -v runuser >/dev/null 2>&1; then
+        runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qtAc "$1"
+    else
+        su -s /bin/sh postgres -c "psql -v ON_ERROR_STOP=1 -qtAc \"$1\""
+    fi
+}
 
-# Add nameserver 8.8.8.8 to the beginning of /etc/resolv.conf if it doesn't already exist
-if ! grep -q "nameserver 8.8.8.8" /etc/resolv.conf; then
-  sed -i '1inameserver 8.8.8.8' /etc/resolv.conf
-fi
+setup_postgres() {
+    if [ "$PKG_MGR" = apt ]; then
+        systemctl enable --now postgresql >/dev/null 2>&1 || true
+    else
+        if [ ! -d /var/lib/pgsql/data/base ]; then
+            postgresql-setup --initdb >/dev/null 2>&1 || \
+                warn "postgresql-setup initdb failed - assuming cluster exists"
+        fi
+        systemctl enable --now postgresql >/dev/null 2>&1 || \
+            systemctl enable --now postgresql-* >/dev/null 2>&1 || true
+        # best effort: password auth on loopback (EL defaults to ident)
+        local hba
+        for hba in /var/lib/pgsql/data/pg_hba.conf /var/lib/pgsql/*/data/pg_hba.conf; do
+            [ -f "$hba" ] || continue
+            if grep -qE '^host.*127\.0\.0\.1/32.*(ident|peer)' "$hba"; then
+                sed -i -E 's/^(host.*127\.0\.0\.1\/32.*(ident|peer))/\1 scram-sha-256 #/' "$hba"
+                systemctl restart postgresql >/dev/null 2>&1 || true
+            fi
+        done
+    fi
 
-# Fix CentOS 7 repository
-bash <(curl -s https://raw.githubusercontent.com/imafaz/awesome-scripts/main/fix-centos7-repository/main.sh)
+    if [ "$(psql_as_postgres "select 1 from pg_roles where rolname='ibs'")" != "1" ]; then
+        info "creating postgres role ibs"
+        psql_as_postgres "create role ibs with login createdb password '$DB_PASS'" >/dev/null
+    else
+        psql_as_postgres "alter role ibs with login password '$DB_PASS'" >/dev/null
+    fi
 
-# Update system packages
-echo "Updating system packages..."
-yum update -y
+    if [ "$(psql_as_postgres "select 1 from pg_database where datname='IBSng'")" != "1" ]; then
+        info "creating database IBSng"
+        psql_as_postgres "createdb -O ibs IBSng" >/dev/null 2>&1 || \
+            psql_as_postgres "create database \"IBSng\" owner ibs" >/dev/null
+    fi
+}
 
-# Install necessary packages
-echo "Installing necessary packages: httpd, php, postgresql, postgresql-server, postgresql-python, git, perl, firewalld..."
-yum install httpd php postgresql postgresql-server postgresql-python git perl firewalld -y
+sql_ib() { # run SQL as role ibs over TCP
+    PGPASSWORD="$DB_PASS" psql -h 127.0.0.1 -p "${IBS_DB_PORT:-5432}" -U ibs -d IBSng \
+        -v ON_ERROR_STOP=1 -qtAc "$1"
+}
 
-# Initialize PostgreSQL database
-echo "Initializing PostgreSQL database..."
-postgresql-setup initdb
-systemctl start postgresql
+load_schema() {
+    if [ "$(sql_ib "select to_regclass('public.users')")" = "users" ]; then
+        info "database schema already present - skipping load"
+        return
+    fi
+    info "loading database schema"
+    local f
+    for f in tables.sql functions.sql initial.sql defs.sql; do
+        PGPASSWORD="$DB_PASS" psql -h 127.0.0.1 -U ibs -d IBSng \
+            -v ON_ERROR_STOP=1 -q -f "$SOURCE/db/$f"
+    done
+}
 
-# Create PostgreSQL database and user
-echo "Creating PostgreSQL database 'IBSng' and user 'ibs'..."
-su postgres -c "createdb IBSng"
-su postgres -c "createuser ibs"
-su postgres -c "createlang plpgsql IBSng"
+set_admin_password() {
+    info "setting admin password for 'system'"
+    local md5
+    md5="$(IBS_ADMIN_PASSWORD="$ADMIN_PASS" python3 - "$PREFIX" <<'PY'
+import sys
+sys.path.insert(0, sys.argv[1])
+import os
+from core.lib import password_lib
+print(password_lib.Password(os.environ["IBS_ADMIN_PASSWORD"]).getMd5Crypt())
+PY
+)" || die "could not generate admin password hash"
+    sql_ib "update admins set password='$md5' where username='system'" >/dev/null
+}
 
-# Clone IBSng repository
-echo "Cloning IBSng repository from GitHub..."
-git clone https://github.com/imafaz/IBSng.git /usr/local/IBSng
+# ---------------------------------------------------------------- files/services
+copy_tree() {
+    info "syncing source tree to $PREFIX"
+    mkdir -p "$PREFIX"
+    rsync -a --delete \
+        --exclude '.git' --exclude '.pytest_cache' --exclude '__pycache__' \
+        --exclude '.pytest_cache' \
+        "$SOURCE/" "$PREFIX/"
+    chmod 755 "$PREFIX/ibs.py" "$PREFIX/backup_ibs" "$PREFIX/restore_ibs" \
+        "$PREFIX/addons/openvpn/openvpn_agent.py"
+}
 
-echo "Copying backup and restore scripts to /usr/bin..."
-cp /usr/local/IBSng/backup_ibs /usr/bin/
-cp /usr/local/IBSng/restore_ibs /usr/bin/
+write_env_file() {
+    install -d -m 755 /etc/ibsng
+    cat > /etc/ibsng/ibsng.env <<EOF
+IBS_DB_HOST=127.0.0.1
+IBS_DB_PORT=5432
+IBS_DB_USERNAME=ibs
+IBS_DB_PASSWORD=$DB_PASS
+EOF
+    chmod 600 /etc/ibsng/ibsng.env
+    info "wrote /etc/ibsng/ibsng.env (mode 600)"
+}
 
-# Set permissions for the scripts
-echo "Setting permissions for backup and restore scripts..."
-chmod 777 /usr/bin/backup_ibs
-chmod 777 /usr/bin/restore_ibs
+setup_web() {
+    local web_user conf_dir
+    if [ "$PKG_MGR" = apt ]; then
+        web_user=www-data
+        conf_dir=/etc/apache2/conf-available
+        install -m 644 "$PREFIX/addons/apache/ibs.conf" "$conf_dir/ibsng.conf"
+        a2enmod -q alias expires deflate >/dev/null 2>&1 || true
+        a2enconf -q ibsng >/dev/null 2>&1 || true
+    else
+        web_user=apache
+        conf_dir=/etc/httpd/conf.d
+        install -m 644 "$PREFIX/addons/apache/ibs.conf" "$conf_dir/ibsng.conf"
+    fi
+    # apache's default <Directory /> rule denies everything outside the
+    # web root - grant the interface tree explicitly (idempotent rewrite)
+    cat >> "$conf_dir/ibsng.conf" <<EOF
 
-echo "Backup and restore scripts have been installed successfully."
+<Directory "$PREFIX/interface/IBSng">
+    Options -Indexes +FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+EOF
+    install -d -m 775 -o root -g "$web_user" /var/log/IBSng
+    chown -R "$web_user:" "$PREFIX/interface/smarty/templates_c"
+    chmod -R ug+rw "$PREFIX/interface/smarty/templates_c"
+    systemctl enable apache2 >/dev/null 2>&1 || \
+        systemctl enable httpd >/dev/null 2>&1 || \
+        warn "could not enable web server service"
+    systemctl reload-or-restart apache2 >/dev/null 2>&1 || \
+        systemctl reload-or-restart httpd >/dev/null 2>&1 || \
+        warn "could not (re)load web server"
+}
 
+setup_service() {
+    info "installing systemd unit ibsng.service"
+    cat > /etc/systemd/system/ibsng.service <<EOF
+[Unit]
+Description=IBSng RADIUS server
+After=network-online.target postgresql.service
+Wants=network-online.target
 
-# Enable and start firewalld
-echo "Enabling and starting firewalld..."
-systemctl enable firewalld
-systemctl start firewalld
+[Service]
+Type=forking
+EnvironmentFile=-/etc/ibsng/ibsng.env
+ExecStart=$PREFIX/ibs.py
+PIDFile=/run/IBSng.pid
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
 
-# Allow necessary ports in firewalld
-echo "Allowing necessary ports in firewalld: 80, 1812, 1813..."
-firewall-cmd --add-port=80/tcp --permanent
-firewall-cmd --add-port=1812/udp --permanent
-firewall-cmd --add-port=1813/udp --permanent
-firewall-cmd --reload
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable ibsng >/dev/null 2>&1 || true
+    systemctl restart ibsng
+    local i
+    for i in $(seq 1 30); do
+        if awk '$2 ~ /:0714$/ {found=1} END {exit !found}' /proc/net/udp 2>/dev/null; then
+            info "IBSng is up (RADIUS listening on UDP/1812)"
+            return 0
+        fi
+        sleep 1
+    done
+    warn "IBSng did not bind UDP/1812 within 30s - check: journalctl -u ibsng"
+}
 
-# Run initialization script
-echo "Running initialization script..."
-/usr/local/IBSng/scripts/init.py
+setup_firewall() {
+    [ "$ENABLE_FIREWALL" = y ] || { info "firewall rules skipped"; return; }
+    if command -v ufw >/dev/null 2>&1; then
+        ufw allow 80/tcp >/dev/null 2>&1 || true
+        ufw allow 1812/udp >/dev/null 2>&1 || true
+        ufw allow 1813/udp >/dev/null 2>&1 || true
+        [ "$ENABLE_OPENVPN" = y ] && ufw allow 1194/udp >/dev/null 2>&1 || true
+        info "ufw rules added (enable ufw yourself if it is inactive)"
+    elif command -v firewall-cmd >/dev/null 2>&1; then
+        firewall-cmd --permanent --add-port=80/tcp >/dev/null 2>&1 || true
+        firewall-cmd --permanent --add-port=1812/udp >/dev/null 2>&1 || true
+        firewall-cmd --permanent --add-port=1813/udp >/dev/null 2>&1 || true
+        [ "$ENABLE_OPENVPN" = y ] && firewall-cmd --permanent --add-port=1194/udp >/dev/null 2>&1 || true
+        firewall-cmd --reload >/dev/null 2>&1 || true
+        info "firewalld rules added"
+    else
+        warn "no ufw/firewalld found - open ports 80/tcp, 1812/udp, 1813/udp manually"
+    fi
+}
 
-echo "Installation and configuration completed successfully."
+# ---------------------------------------------------------------- openvpn
+setup_openvpn() {
+    [ "$ENABLE_OPENVPN" = y ] || { info "OpenVPN wiring skipped"; return; }
+
+    local secret existing
+    existing="$(sql_ib "select radius_secret from ras where ras_type='openvpn' limit 1")"
+    if [ -n "$existing" ]; then
+        secret="$existing"
+        info "openvpn RAS already exists - reusing its radius secret"
+    else
+        if [ -n "$(sql_ib "select ras_ip from ras where ras_ip='127.0.0.1' limit 1")" ]; then
+            die "RAS with IP 127.0.0.1 already exists and is not type openvpn - resolve in admin UI first"
+        fi
+        secret="$(openssl rand -hex 16 2>/dev/null || head -c16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+        info "creating RAS 'openvpn-local' (127.0.0.1)"
+        sql_ib "insert into ras (ras_id, ras_description, ras_ip, ras_type, radius_secret)
+                values ((select coalesce(max(ras_id),0)+1 from ras),
+                        'openvpn-local', '127.0.0.1', 'openvpn', '$secret')" >/dev/null
+    fi
+
+    install -d -m 700 /etc/ibsng
+    cat > /etc/ibsng/openvpn_agent.env <<EOF
+IBSNG_RADIUS_SECRET=$secret
+IBSNG_RADIUS_HOST=127.0.0.1
+IBSNG_AUTH_DIR=/run/openvpn/ibsng-auth
+EOF
+    chmod 600 /etc/ibsng/openvpn_agent.env
+
+    install -d -m 755 /etc/openvpn/server
+    cat > /etc/openvpn/server/ibsng.conf <<EOF
+# generated by IBSng installer - RADIUS NAS accounting into IBSng
+port 1194
+proto udp
+dev tun
+topology subnet
+server 10.8.0.0 255.255.255.0
+persist-key
+persist-tun
+
+script-security 2
+auth-user-pass-verify $PREFIX/addons/openvpn/openvpn_agent.py auth via-file
+client-connect $PREFIX/addons/openvpn/openvpn_agent.py start
+client-disconnect $PREFIX/addons/openvpn/openvpn_agent.py stop
+
+status /run/openvpn/ibsng.status 30
+status-version 2
+management /run/openvpn/ibsng.sock unix
+EOF
+
+    cat > /etc/cron.d/ibsng-openvpn-interim <<EOF
+# interim RADIUS accounting updates for OpenVPN sessions
+* * * * * root $PREFIX/addons/openvpn/openvpn_agent.py interim --status-file /run/openvpn/ibsng.status >> /var/log/IBSng/openvpn_interim.log 2>&1
+EOF
+    chmod 644 /etc/cron.d/ibsng-openvpn-interim
+
+    systemctl enable --now openvpn-server@ibsng >/dev/null 2>&1 || \
+        systemctl enable --now openvpn@ibsng >/dev/null 2>&1 || \
+        warn "could not start openvpn-server@ibsng - check /etc/openvpn/server/ibsng.conf"
+    info "OpenVPN accounting wired (server config + interim cron)"
+}
+
+# ---------------------------------------------------------------- run
+info "IBSng installer starting (prefix: $PREFIX)"
+setup_postgres
+load_schema
+copy_tree
+set_admin_password
+write_env_file
+setup_web
+setup_service
+setup_openvpn
+setup_firewall
+
+LOCAL_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1); exit}')"
+LOCAL_IP="${LOCAL_IP:-127.0.0.1}"
+
+cat <<EOF
+
+IBSng installation finished.
+
+  Admin panel:   http://$LOCAL_IP/IBSng/admin
+  Admin login:   system / (the password you chose)
+  RADIUS:        UDP 1812 (auth), UDP 1813 (accounting)
+  Service:       systemctl {start|stop|status|restart} ibsng
+  Logs:          journalctl -u ibsng  and  /var/log/IBSng/
+
+Security checklist:
+  * change the admin password immediately if you kept the default
+  * XML-RPC (127.0.0.1:1235) and the database must stay local-only
+  * re-run this script any time - it converges instead of failing
+EOF
