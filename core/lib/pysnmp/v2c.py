@@ -9,8 +9,9 @@ import time
 import string
 
 # Import package components
-import asn1
-import v1
+from core.lib.pysnmp import asn1
+from core.lib.pysnmp import v1
+from core.lib.pysnmp.asn1 import _ord
 
 class Error(v1.Error):
     """Base class for v2 module exceptions
@@ -150,7 +151,7 @@ class BINDINGS(BERHEADER, v1.BINDINGS):
 class RR_PDU(BERHEADER, v1.RR_PDU):
     """
     """
-    FILTER = { 'error_status' :  range(0, 19) }
+    FILTER = { 'error_status' :  list(range(0, 19)) }
 
     def _encode(self):
         """
@@ -177,7 +178,7 @@ class RR_PDU(BERHEADER, v1.RR_PDU):
            See RFC 1157 for details.
         """
         # Decode PDU
-        tag = self.decode_tag(ord(input[0]))
+        tag = self.decode_tag(_ord(input[0]))
         (pdu, rest) = eval(tag+'()').decode(input)
         self['tag'] = tag[:-4]
 
@@ -327,7 +328,7 @@ class BULK_PDU(BERHEADER, v1.SNMPOBJECT):
            See RFC 1157 for details.
         """
         # Decode PDU
-        tag = self.decode_tag(ord(input[0]))
+        tag = self.decode_tag(_ord(input[0]))
         (pdu, rest) = eval(tag+'()').decode(input)
         self['tag'] = tag[:-4]
 
@@ -375,16 +376,16 @@ def decode(input):
                          + str(msg['version']))
     
     try:
-        tag = BERHEADER().decode_tag(ord(pdu[0]))
+        tag = BERHEADER().decode_tag(_ord(pdu[0]))
 
-    except StandardError, why:
+    except Exception as why:
         raise BadEncoding('Decoder failure (bad input?): ' + str(why))
 
     try:
         # Create request object of matching type
         msg = eval(tag[:-4]+'()')
 
-    except NameError, why:
+    except NameError as why:
         raise BadPDUType('Unsuppored SNMP request type: ' + str(why))
 
     # Decode request

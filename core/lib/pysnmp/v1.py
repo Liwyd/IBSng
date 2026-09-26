@@ -9,7 +9,8 @@ import time
 import string
 
 # Import package components
-import asn1
+from core.lib.pysnmp import asn1
+from core.lib.pysnmp.asn1 import _ord
 
 class Error(asn1.Error):
     """Base class for v1 module exceptions
@@ -137,7 +138,7 @@ class SNMPOBJECT(BERHEADER):
         """Return native representation of instance payload
         """
         res = ''
-        for key in self.value.keys():
+        for key in list(self.value.keys()):
             if res:
                 res = res + ', ' + key + '=' + repr(self.value[key]) 
             else:    
@@ -154,9 +155,22 @@ class SNMPOBJECT(BERHEADER):
             raise TypeError('Comparation method not provided for %s'\
                             % self.__class__.__name)
 
-        except StandardError, why:
+        except Exception as why:
             raise TypeError('Cannot compare %s vs %s: %s'\
                             % (str(self), str(other), why))
+
+
+    def __eq__(self, other):
+        try:
+            return self.__cmp__(other) == 0
+        except (AttributeError, TypeError):
+            return NotImplemented
+
+    def __lt__(self, other):
+        try:
+            return self.__cmp__(other) < 0
+        except (AttributeError, TypeError):
+            return NotImplemented
 
     def encode(self, **kwargs):
         """
@@ -169,14 +183,14 @@ class SNMPOBJECT(BERHEADER):
         try:
             return self._encode()
 
-        except AttributeError, why:
+        except AttributeError as why:
             raise TypeError('No encoder defined for %s object' %\
                             self.__class__.__name__)
 
-        except KeyError, why:
+        except KeyError as why:
             raise TypeError('Missing mandatory parameter: %s' % why)
     
-        except StandardError, why:
+        except Exception as why:
             raise BadArgument('Encoder failure (bad input?): ' + str(why))
             
     def decode(self, input):
@@ -191,11 +205,11 @@ class SNMPOBJECT(BERHEADER):
         try:
             return self._decode(input)
         
-        except AttributeError, why:
+        except AttributeError as why:
             raise TypeError('No decoder defined for %s object' %\
                             self.__class__.__name__)
 
-        except StandardError, why:
+        except Exception as why:
             raise BadArgument('Decoder failure (bad input?): ' + str(why))
 
     #
@@ -222,17 +236,20 @@ class SNMPOBJECT(BERHEADER):
     def keys(self):
         """
         """
-        return self.value.keys()
+        return list(self.value.keys())
 
     def has_key(self, key):
         """
         """
-        return self.value.has_key(key)
+        return key in self.value
+
+    def __contains__(self, key):
+        return key in self.value
 
     def get(self, key, default):
         """
         """
-        if self.value.has_key(key):
+        if key in self.value:
             return self.value[key]
 
         return default
@@ -243,10 +260,10 @@ class SNMPOBJECT(BERHEADER):
         if not hasattr(self, 'value'):
             self.value = {}
 
-        for key in self.ARGS.keys():
-            if args.has_key(key):
+        for key in list(self.ARGS.keys()):
+            if key in args:
                 self[key] = args[key]
-            elif self.ARGS[key] is not None and not self.has_key(key):
+            elif self.ARGS[key] is not None and key not in self:
                 self[key] = self.ARGS[key]
 
     def clear(self):
@@ -275,7 +292,7 @@ class SNMPOBJECT(BERHEADER):
                 raise TypeError('No copy method defined for %s object' %\
                                 self.__class__.__name__)
         
-        except StandardError, why:
+        except Exception as why:
             raise TypeError('Cannot copy %s from %s: %s'\
                             % (str(self), str(other), why))
         
@@ -294,7 +311,7 @@ class BINDINGS(SNMPOBJECT):
     def _filter(self, key, value):
         """
         """
-        if not value or not self.FILTER.has_key(key):
+        if not value or key not in self.FILTER:
             return
 
         for val in value:
@@ -311,7 +328,7 @@ class BINDINGS(SNMPOBJECT):
         """
         # Initialize stuff
         index = 0
-        encoded_oid_pairs = ''
+        encoded_oid_pairs = b''
 
         # XXX handle unequal pairs
         
@@ -379,12 +396,12 @@ class RR_PDU(SNMPOBJECT):
              'tag'          :  None,
              'bindings'     :  None }
 
-    FILTER = { 'error_status' :  range(0, 6) }
+    FILTER = { 'error_status' :  list(range(0, 6)) }
                             
     def _filter(self, key, value):
         """
         """
-        if value is None or not self.FILTER.has_key(key):
+        if value is None or key not in self.FILTER:
             return
 
         if not value in self.FILTER[key]:
@@ -423,7 +440,7 @@ class RR_PDU(SNMPOBJECT):
            See RFC 1157 for details.
         """
         # Decode PDU
-        tag = self.decode_tag(ord(input[0]))
+        tag = self.decode_tag(_ord(input[0]))
         (pdu, rest) = eval(tag+'()').decode(input)
         self['tag'] = tag[:-4]
 
@@ -450,11 +467,11 @@ class MESSAGE(SNMPOBJECT):
     def _filter(self, key, value):
         """
         """
-        if not value or not self.FILTER.has_key(key):
+        if not value or key not in self.FILTER:
             return
 
         try:
-            tag = self.decode_tag(ord(value[0]))
+            tag = self.decode_tag(_ord(value[0]))
 
         except error.UnknownTag:
             return -1
@@ -546,7 +563,7 @@ class RROBJECT:
         """
         res = ''
         for member in self.bindings, self.pdu, self.msg:
-            for key in member.keys():
+            for key in list(member.keys()):
                 if res:
                     res = res + ', ' + key + '=' + repr(member[key]) 
                 else:    
@@ -558,6 +575,19 @@ class RROBJECT:
         """
         return not (self.pdu == other and self.msg == other)
     
+
+    def __eq__(self, other):
+        try:
+            return self.__cmp__(other) == 0
+        except (AttributeError, TypeError):
+            return NotImplemented
+
+    def __lt__(self, other):
+        try:
+            return self.__cmp__(other) < 0
+        except (AttributeError, TypeError):
+            return NotImplemented
+
     def encode(self, **kwargs):
         """
            encode([kwargs]) -> octet stream
@@ -600,11 +630,11 @@ class RROBJECT:
     def __getitem__(self, key):
         """Attempt to get requested item from either of message components XXX
         """
-        if self.bindings.has_key(key):
+        if key in self.bindings:
             return self.bindings[key]
-        if self.pdu.has_key(key):
+        if key in self.pdu:
             return self.pdu[key]
-        if self.msg.has_key(key):
+        if key in self.msg:
             return self.msg[key]
         
     def __setitem__(self, key, value):
@@ -612,7 +642,7 @@ class RROBJECT:
            components XXX
         """
         for part in self.msg, self.pdu, self.bindings:
-            if part.has_key(key):
+            if key in part:
                 part[key] = value
                 return
 
@@ -622,21 +652,27 @@ class RROBJECT:
     def keys(self):
         """Return keys for all message components
         """
-        return self.bindings.keys() + \
-               self.pdu.keys() + \
-               self.msg.keys()
+        return list(self.bindings.keys()) + \
+               list(self.pdu.keys()) + \
+               list(self.msg.keys())
 
     def has_key(self, key):
         """Invoke has_key() against all message components
         """
         for comp in self.bindings, self.pdu, self.msg:
-            if comp.has_key(key):
+            if key in comp:
                 return 1
+
+    def __contains__(self, key):
+        for comp in self.bindings, self.pdu, self.msg:
+            if key in comp:
+                return True
+        return False
 
     def get(self, key, default):
         """Get item by key with default
         """
-        if self.has_key(key):
+        if key in self:
             return self[key]
 
         return default
@@ -731,12 +767,12 @@ class TRAP_PDU(SNMPOBJECT):
              'tag'           :  None,
              'bindings'      :  None }
 
-    FILTER = { 'generic_trap':  range(0, 7) }
+    FILTER = { 'generic_trap':  list(range(0, 7)) }
 
     def _filter(self, key, value):
         """
         """
-        if value is None or not self.FILTER.has_key(key):
+        if value is None or key not in self.FILTER:
             return
 
         if not value in self.FILTER[key]:
@@ -771,7 +807,7 @@ class TRAP_PDU(SNMPOBJECT):
            See RFC-1157 for details.
         """
         # Decode PDU
-        tag = self.decode_tag(ord(input[0]))
+        tag = self.decode_tag(_ord(input[0]))
         (pdu, rest) = eval(tag+'()').decode(input)
         self['tag'] = tag[:-4]
 
@@ -828,16 +864,16 @@ def decode(input):
 
     try:
         # Probe PDU
-        tag = BERHEADER().decode_tag(ord(pdu[0]))
+        tag = BERHEADER().decode_tag(_ord(pdu[0]))
 
-    except StandardError, why:
+    except Exception as why:
         raise BadEncoding('Decoder failure (bad input?): ' + str(why))
 
     try:
         # Create request object of matching type
         msg = eval(tag[:-4]+'()')
 
-    except NameError, why:
+    except NameError as why:
         raise BadPDUType('Unsuppored SNMP PDU type: ' + str(why))
 
     # Decode request

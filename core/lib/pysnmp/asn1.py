@@ -7,10 +7,16 @@
    This code is partially derived from Simon Leinen's <simon@switch.ch>
    BER Perl module.
 """
-import string
 
 # Import package components
-import error
+from core.lib.pysnmp import error
+from functools import reduce
+
+
+def _ord(x):
+    if isinstance(x, int):
+        return x
+    return ord(x)
 
 class Error(error.Generic):
     """Base class for asn1 module exceptions
@@ -98,8 +104,8 @@ class BERHEADER:
            representation.
         """
         # Lookup the tag ID by name
-        if self.TAGS.has_key(name):
-            return '%c' % self.TAGS[name]
+        if name in self.TAGS:
+            return bytes([self.TAGS[name]])
     
         raise UnknownTag('Unknown tag: ' + name)
 
@@ -113,27 +119,27 @@ class BERHEADER:
         # If given length fits one byte
         if length < 0x80:
             # Pack it into one octet
-            return '%c' % length
+            return bytes([length])
         
         # One extra byte required
         elif length < 0xFF:
             # Pack it into two octets
-            return '%c%c' % (0x81, length)
+            return bytes([0x81, length])
         
         # Two extra bytes required
         elif length < 0xFFFF:
             # Pack it into three octets
-            return '%c%c%c' % (0x82, \
-                               (length >> 8) & 0xFF, \
-                               length & 0xFF)
+            return bytes([0x82, \
+                          (length >> 8) & 0xFF, \
+                          length & 0xFF])
         
         # Three extra bytes required
         elif length < 0xFFFFFF:
             # Pack it into three octets
-            return '%c%c%c%c' % (0x83, \
-                                 (length >> 16) & 0xFF, \
-                                 (length >> 8) & 0xFF, \
-                                 length & 0xFF)
+            return bytes([0x83, \
+                          (length >> 16) & 0xFF, \
+                          (length >> 8) & 0xFF, \
+                          length & 0xFF])
         
         # More octets may be added
         else:
@@ -147,7 +153,7 @@ class BERHEADER:
            item type tag.
         """
         # Lookup tag in the dictionary of known tags
-        for key in self.TAGS.keys():
+        for key in list(self.TAGS.keys()):
             if tag == self.TAGS[key]:
                 return key
             
@@ -162,35 +168,35 @@ class BERHEADER:
         """
         try:
             # Get the most-significant-bit
-            msb = ord(input[0]) & 0x80
+            msb = _ord(input[0]) & 0x80
             if not msb:
-                return (ord(input[0]) & 0x7F, 1)
+                return (_ord(input[0]) & 0x7F, 1)
 
             # Get the size if the length
-            size = ord(input[0]) & 0x7F
+            size = _ord(input[0]) & 0x7F
 
             # One extra byte length
             if msb and size == 1:
-                return (ord(input[1]), size+1)
+                return (_ord(input[1]), size+1)
             
             # Two extra bytes length
             elif msb and size == 2:
-                result = ord(input[1])
+                result = _ord(input[1])
                 result = result << 8
-                return (result | ord(input[2]), size+1)
+                return (result | _ord(input[2]), size+1)
 
             # Two extra bytes length
             elif msb and size == 3:
-                result = ord(input[1])
+                result = _ord(input[1])
                 result = result << 8
-                result = result | ord(input[2])
+                result = result | _ord(input[2])
                 result = result << 8
-                return (result | ord(input[3]), size+1)
+                return (result | _ord(input[3]), size+1)
 
             else:
                 raise OverFlow('Too many length bytes: ' + str(size))
 
-        except StandardError, why:
+        except Exception as why:
             raise BadEncoding('Malformed input: ' + str(why))
 
 
@@ -236,11 +242,24 @@ class ASN1OBJECT(BERHEADER):
         except AttributeError:
             pass
 
-        except StandardError, why:
+        except Exception as why:
             raise TypeError('Cannot compare %s vs %s: %s'\
                             % (str(self), str(other), why))
 
-        return cmp(self.value, other)
+        return (self.value > other) - (self.value < other)
+
+
+    def __eq__(self, other):
+        try:
+            return self.__cmp__(other) == 0
+        except (AttributeError, TypeError):
+            return NotImplemented
+
+    def __lt__(self, other):
+        try:
+            return self.__cmp__(other) < 0
+        except (AttributeError, TypeError):
+            return NotImplemented
 
     def update(self, value):
         """
@@ -254,7 +273,7 @@ class ASN1OBJECT(BERHEADER):
                     raise OverFlow('Value %s does not fit the %s type' \
                                    % (str(value), self.__class__.__name__))
 
-            except StandardError, why:
+            except Exception as why:
                 raise TypeError('Cannot range check value %s: %s'\
                                 % (str(value), why))
             
@@ -278,7 +297,7 @@ class ASN1OBJECT(BERHEADER):
             raise TypeError('No encoder defined for %s object' %\
                             self.__class__.__name__)
 
-        except StandardError, why:
+        except Exception as why:
             raise BadArgument('Encoder failure (bad input?): ' + str(why))
     
     def decode(self, input):
@@ -289,7 +308,7 @@ class ASN1OBJECT(BERHEADER):
             the rest of input stream.
         """
         try:
-            tag = self.decode_tag(ord(input[0]))
+            tag = self.decode_tag(_ord(input[0]))
 
             if tag != self.__class__.__name__:
                 raise TypeError('Type mismatch: %s vs %s' %\
@@ -308,7 +327,7 @@ class ASN1OBJECT(BERHEADER):
             raise TypeError('No decoder defined for %s object' %\
                             self.__class__.__name__)
 
-        except StandardError, why:
+        except Exception as why:
             raise BadEncoding('Decoder failure (bad input?): '\
                                     + str(why))
     
@@ -326,30 +345,30 @@ class INTEGER(ASN1OBJECT):
            
            Encode tagged integer into octet stream.
         """
-        result = ''
+        result = b''
         integer = self.value
         
         # The 0 and -1 values need to be handled separately since
         # they are the terminating cases of the positive and negative
         # cases repectively.
         if integer == 0:
-            result = '\000'
+            result = b'\000'
             
         elif integer == -1:
-            result = '\377'
+            result = b'\377'
             
         elif integer < 0:
-            while integer <> -1:
-                (integer, result) = integer>>8, chr(integer & 0xff) + result
+            while integer != -1:
+                (integer, result) = integer>>8, bytes([integer & 0xff]) + result
                 
-            if ord(result[0]) & 0x80 == 0:
-                result = chr(0xff) + result
+            if _ord(result[0]) & 0x80 == 0:
+                result = bytes([0xff]) + result
         else:
             while integer > 0:
-                (integer, result) = integer>>8, chr(integer & 0xff) + result
+                (integer, result) = integer>>8, bytes([integer & 0xff]) + result
                 
-            if (ord(result[0]) & 0x80 <> 0):
-                result = chr(0x00) + result
+            if (_ord(result[0]) & 0x80 != 0):
+                result = bytes([0x00]) + result
 
         return result
 
@@ -359,12 +378,12 @@ class INTEGER(ASN1OBJECT):
            
            Decode octet stream into signed ASN.1 integer (of any length).
         """
-        bytes = map(ord, input)
+        bytes = list(map(_ord, input))
 
         if bytes[0] & 0x80:
-            bytes.insert(0, -1L)
+            bytes.insert(0, -1)
 
-        result = reduce(lambda x,y: x<<8 | y, bytes, 0L)
+        result = reduce(lambda x,y: x<<8 | y, bytes, 0)
 
         try:
             return int(result)
@@ -387,12 +406,12 @@ class UNSIGNED32(INTEGER):
            
            Decode octet stream into unsigned ASN.1 integer (of any length).
         """
-        bytes = map(ord, input)
+        bytes = list(map(_ord, input))
 
         if bytes[0] & 0x80:
-            bytes.insert(0, 0xffffffffL)
+            bytes.insert(0, 0xffffffff)
 
-        res = reduce(lambda x,y: x<<8 | y, bytes, 0L)
+        res = reduce(lambda x,y: x<<8 | y, bytes, 0)
 
         # Attempt to return int whenever possible
         try:
@@ -404,7 +423,7 @@ class UNSIGNED32(INTEGER):
     def _range(self, value):
         """
         """
-        return value < 0 or value & ~0xffffffffL
+        return value < 0 or value & ~0xffffffff
 
 class TIMETICKS(UNSIGNED32):
     """ASN.1 TIMETICKS object
@@ -437,7 +456,7 @@ class COUNTER64(UNSIGNED32):
     def _range(self, value):
         """
         """
-        return value < 0 or value & ~0xffffffffffffffffL
+        return value < 0 or value & ~0xffffffffffffffff
     
 class SEQUENCE(ASN1OBJECT):
     """ASN.1 sequence object
@@ -450,7 +469,9 @@ class SEQUENCE(ASN1OBJECT):
            string.
         """
         if self.value is None:
-            return ''
+            return b''
+        if isinstance(self.value, str):
+            return self.value.encode('utf-8')
         return self.value
 
     def _decode(self, input):
@@ -493,7 +514,7 @@ class OBJECTID(ASN1OBJECT):
         result = oid[index] * 40
         result = result + oid[index+1]
         try:
-            result = [ '%c' % int(result) ]
+            result = [ bytes([int(result)]) ]
 
         except OverflowError:
             raise BadArgument('Too large initial sub-IDs: ' + str(oid[index:]))
@@ -505,25 +526,25 @@ class OBJECTID(ASN1OBJECT):
         for subid in oid[index:]:
             if subid > -1 and subid < 128:
                 # Optimize for the common case
-                result.append('%c' % (subid & 0x7f))
+                result.append(bytes([subid & 0x7f]))
 
-            elif subid < 0 or subid > 0xFFFFFFFFL:
+            elif subid < 0 or subid > 0xFFFFFFFF:
                 raise BadArgument('Too large Sub-Object ID: ' + str(subid))
 
             else:
                 # Pack large Sub-Object IDs
-                res = [ '%c' % (subid & 0x7f) ]
+                res = [ bytes([subid & 0x7f]) ]
                 subid = subid >> 7
                 while subid > 0:
-                    res.insert(0, '%c' % (0x80 | (subid & 0x7f)))
+                    res.insert(0, bytes([0x80 | (subid & 0x7f)]))
                     subid = subid >> 7
 
-                # Convert packed Sub-Object ID to string and add packed
+                # Convert packed Sub-Object ID to bytes and add packed
                 # it to resulted Object ID
-                result.append(string.join(res, ''))
+                result.append(b''.join(res))
 
-        # Convert BER encoded Object ID to string and return
-        return string.join(result, '')
+        # Convert BER encoded Object ID to bytes and return
+        return b''.join(result)
         
     def _decode(self, input):
         """
@@ -535,16 +556,20 @@ class OBJECTID(ASN1OBJECT):
         index = 0
 
         # Get the first subid
-        subid = ord(input[index])
-        oid.append(int(subid / 40))
-        oid.append(int(subid % 40))
+        subid = input[index]
+        if not isinstance(subid, int):
+                subid = _ord(subid)
+        oid.append(subid // 40)
+        oid.append(subid % 40)
 
         index = index + 1
 
         # Loop through the rest
         while index < len(input):
             # Get a subid
-            subid = ord(input[index])
+            subid = input[index]
+            if not isinstance(subid, int):
+                    subid = _ord(subid)
 
             if subid < 128:
                 oid.append(subid)
@@ -559,7 +584,7 @@ class OBJECTID(ASN1OBJECT):
 
                     # Take next octet
                     index = index + 1
-                    next = ord(input[index])
+                    next = _ord(input[index])
 
                     # Just for sure
                     if index > len(input):
@@ -576,7 +601,9 @@ class OBJECTID(ASN1OBJECT):
     def _cmp(self, other):
         """
         """
-        return cmp(self.str2num(self.value), self.str2num(other()))
+        a = self.str2num(self.value)
+        b = self.str2num(other())
+        return (a > b) - (a < b)
 
     def isaprefix(self, other):
         """
@@ -613,14 +640,14 @@ class OBJECTID(ASN1OBJECT):
         # Convert string into a list and filter out empty members
         # (leading dot causes this)
         try:
-            toid = filter(lambda x: len(x), string.split(soid, '.'))
+            toid = [x for x in soid.split('.') if len(x)]
 
         except:
             raise BadArgument('Malformed Object ID: ' + str(soid))
 
         # Convert a list of symbols into a list of numbers
         try:
-            noid = map(lambda x: string.atol(x), toid)
+            noid = [int(x) for x in toid]
 
         except:
             raise BadArgument('Malformed Object ID: ' + str(soid))
@@ -644,7 +671,7 @@ class OBJECTID(ASN1OBJECT):
         # list members into a string
         try:
             soid = reduce(lambda x, y: x+y,\
-                          map(lambda x: '.%lu' % x, noid))
+                          ['.%lu' % x for x in noid])
         except:
             raise BadArgument('Malformed numeric Object ID: '+ str(noid))
  
@@ -665,7 +692,7 @@ class IPADDRESS(ASN1OBJECT):
         """
         # Assume address is given in dotted notation
         try:
-            packed = string.split(self.value, '.')
+            packed = self.value.split('.')
 
         except:
             raise BadArgument('Malformed IP address: '+ str(self.value))
@@ -677,13 +704,12 @@ class IPADDRESS(ASN1OBJECT):
         # Convert string octets into integer counterparts
         # (this is still not immune to octet overflow)
         try:
-            packed = map(lambda x: string.atoi (x), packed)
-        except string.atoi_error:
+            packed = [int(x) for x in packed]
+        except ValueError:
             raise BadArgument('Malformed IP address: '+ str(self.value))
         
         # Build a result
-        result = '%c%c%c%c' % (packed[0], packed[1],\
-                               packed[2], packed[3])
+        result = bytes(packed)
 
         # Return encoded result
         return result
@@ -698,8 +724,8 @@ class IPADDRESS(ASN1OBJECT):
             raise BadEncoding('Malformed IP address: '+ str(input))
 
         return '%d.%d.%d.%d' % \
-               (ord(input[0]), ord(input[1]), \
-                ord(input[2]), ord(input[3]))
+               (_ord(input[0]), _ord(input[1]), \
+                _ord(input[2]), _ord(input[3]))
         
 class NULL(ASN1OBJECT):
     """ASN.1 NULL object
@@ -710,7 +736,7 @@ class NULL(ASN1OBJECT):
            
            Encode ASN.1 NULL object into octet stream.
         """
-        return ''
+        return b''
 
     def _decode(self, input):
         """
@@ -721,7 +747,7 @@ class NULL(ASN1OBJECT):
         if input:
             raise BadEncoding('Non-empty NULL value: %s' % str(input))
 
-        return ''
+        return b''
 
     def _range(self, value):
         """
@@ -754,14 +780,14 @@ def decode(input):
        Decode input octet stream (string) into ASN.1 object and return
        the rest of input (string).
     """
-    tag = BERHEADER().decode_tag(ord(input[0]))
+    tag = BERHEADER().decode_tag(_ord(input[0]))
     
     try:
         object = eval(tag + '()')
         return (object, object.decode(input)[1])
 
-    except NameError, why:
+    except NameError as why:
         raise UnknownTag('Unsuppored ASN.1 data type: %s' % tag)
     
-    except StandardError, why:
+    except Exception as why:
         raise BadEncoding('Decoder failure (bad input?): ' + str(why))
