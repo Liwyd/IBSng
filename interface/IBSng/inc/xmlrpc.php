@@ -55,7 +55,7 @@ class IBSxmlrpc
 
     function __returnError($err_str)
     {
-        return array(FALSE,new Error($err_str));
+        return array(FALSE,new IBSError($err_str));
     }
     
     function __returnSuccess($value)

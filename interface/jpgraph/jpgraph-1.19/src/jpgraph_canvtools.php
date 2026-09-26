@@ -380,7 +380,7 @@ class CanvasRectangleText {
     var $iAutoBoxMargin=5;
     var $iShadowWidth=3,$iShadowColor='';
 
-    function CanvasRectangleText($aTxt='',$xl=0,$yt=0,$w=0,$h=0) {
+    function __construct($aTxt='',$xl=0,$yt=0,$w=0,$h=0) {
         $this->iTxt = new Text($aTxt);
         $this->ix = $xl;
         $this->iy = $yt;

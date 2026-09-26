@@ -67,7 +67,7 @@ function str_trim($str,$max_size)
 function checkPasswordMatch($password1,$password2)
 {
     if($password1!=$password2)
-        return array(FALSE,new Error("PASSWORDS_NOT_MATCH|Passwords don't match"));
+        return array(FALSE,new IBSError("PASSWORDS_NOT_MATCH|Passwords don't match"));
     else
         return array(TRUE,"");
 }

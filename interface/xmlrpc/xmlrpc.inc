@@ -180,14 +180,14 @@
 	*/
 	function xmlrpc_entity_decode($string)
 	{
-		$top=split('&', $string);
+		$top=preg_split('/&/', $string);
 		$op='';
 		$i=0;
 		while($i<sizeof($top))
 		{
-			if (ereg("^([#a-zA-Z0-9]+);", $top[$i], $regs))
+			if (preg_match("/^([#a-zA-Z0-9]+);/", $top[$i], $regs))
 			{
-				$op.=ereg_replace("^[#a-zA-Z0-9]+;",
+				$op.=preg_replace('/^[#a-zA-Z0-9]+;/',
 				xmlrpc_lookup_entity($regs[1]),
 				$top[$i]);
 			}
@@ -215,7 +215,7 @@
 		{
 			return $xmlEntities[strtolower($ent)];
 		}
-		if (ereg("^#([0-9]+)$", $ent, $regs))
+		if (preg_match("/^#([0-9]+)$/", $ent, $regs))
 		{
 			return chr($regs[1]);
 		}
@@ -652,7 +652,7 @@
 				{
 					// we have a DOUBLE
 					// we must check that only 0123456789-.<space> are characters here
-					if (!ereg("^[+-]?[eE0123456789 \\t\\.]+$", $_xh[$parser]['ac']))
+					if (!preg_match("/^[+-]?[eE0123456789 \\t\\.]+$/", $_xh[$parser]['ac']))
 					{
 						// TODO: find a better way of throwing an error
 						// than this!
@@ -669,7 +669,7 @@
 				{
 					// we have an I4/INT
 					// we must check that only 0123456789-<space> are characters here
-					if (!ereg("^[+-]?[0123456789 \\t]+$", $_xh[$parser]['ac']))
+					if (!preg_match("/^[+-]?[0123456789 \\t]+$/", $_xh[$parser]['ac']))
 					{
 						// TODO: find a better way of throwing an error
 						// than this!
@@ -721,7 +721,7 @@
 				$_xh[$parser]['params'][]=$_xh[$parser]['st'];
 				break;
 			case 'METHODNAME':
-				$_xh[$parser]['method']=ereg_replace("^[\n\r\t ]+", '', $_xh[$parser]['ac']);
+				$_xh[$parser]['method']=preg_replace('/^[\n\r\t ]+/', '', $_xh[$parser]['ac']);
 				break;
 			// BOOLEAN HAS BEEN ENUMERATED ABOVE!
 			/*case 'BOOLEAN':
@@ -806,7 +806,7 @@
 		var $verifyhost=1;
 		var $no_multicall=false;
 
-		function xmlrpc_client($path, $server, $port=0)
+		function __construct($path, $server, $port=0)
 		{
 			$this->port=$port; $this->server=$server; $this->path=$path;
 		}
@@ -1043,8 +1043,7 @@
 			//   Emulate multicall via multiple requests
 			$results = array();
 			//foreach($msgs as $msg)
-			@reset($msgs);
-			while(list(,$msg) = @each($msgs))
+			foreach($msgs as $msg)
 			{
 				$results[] = $this->send($msg, $timeout, $method);
 			}
@@ -1057,8 +1056,7 @@
 			// Construct multicall message
 			$calls = array();
 			//foreach($msgs as $msg)
-			@reset($msgs);
-			while(list(,$msg) = @each($msgs))
+			foreach($msgs as $msg)
 			{
 				$call['methodName'] = new xmlrpcval($msg->method(),'string');
 				$numParams = $msg->getNumParams();
@@ -1139,7 +1137,7 @@
 		var $errstr = '';
 		var $hdrs = array();
 
-		function xmlrpcresp($val, $fcode = 0, $fstr = '')
+		function __construct($val, $fcode = 0, $fstr = '')
 		{
 			if ($fcode != 0)
 			{
@@ -1215,7 +1213,7 @@
 		var $params=array();
 		var $debug=0;
 
-		function xmlrpcmsg($meth, $pars=0)
+		function __construct($meth, $pars=0)
 		{
 			$this->methodname=$meth;
 			if (is_array($pars) && sizeof($pars)>0)
@@ -1304,10 +1302,10 @@
 			}
 			// see if we got an HTTP 200 OK, else bomb
 			// but only do this if we're using the HTTP protocol.
-			if(ereg("^HTTP",$data))
+			if(preg_match("/^HTTP/", $data))
 			{
 				// Strip HTTP 1.1 100 Continue header if present
-				while (ereg('^HTTP/1.1 1[0-9]{2}', $data))
+				while (preg_match('#^HTTP/1.1 1[0-9]{2}#', $data))
 				{
 					$pos = strpos($data, 'HTTP', 12);
 					// server sent a Continue header without any (valid) content following...
@@ -1316,7 +1314,7 @@
 						break;
 					$data = substr($data, $pos);
 				}
-				if (!ereg("^HTTP/[0-9\\.]+ 200 ", $data))
+				if (!preg_match("#^HTTP/[0-9\\.]+ 200 #", $data))
 				{
 					$errstr= substr($data, 0, strpos($data, "\n")-1);
 					error_log('HTTP error, got response: ' .$errstr);
@@ -1334,7 +1332,7 @@
 			$_xh[(int)$parser]['headers'] = array();
 
 			// separate HTTP headers from data
-			if (ereg("^HTTP", $data))
+			if (preg_match("/^HTTP/", $data))
 			{
 				// be tolerant to usage of \n instead of \r\n to separate headers and data
 				// (even though it is not valid http)
@@ -1353,8 +1351,8 @@
 					}
 				}
 				// be tolerant to line endings, and extra empty lines
-				$ar = split("\r?\n", trim(substr($data, 0, $pos)));
-				while (list(,$line) = @each($ar))
+				$ar = preg_split("/\r?\n/", trim(substr($data, 0, $pos)));
+				foreach($ar as $line)
 				{
 					// take care of multi-line headers
 					$arr = explode(':',$line);
@@ -1383,7 +1381,7 @@
 					print '<PRE>';
 					//foreach ($_xh[$parser]['headers'] as $header)
 					@reset($_xh[$parser]['headers']);
-					while(list($header, $value) = @each($_xh[$parser]['headers']))
+					foreach($_xh[$parser]['headers'] as $header => $value)
 					{
 						print "HEADER: $header: $value\n";
 					}
@@ -1422,7 +1420,7 @@
 			xml_set_default_handler($parser, 'xmlrpc_dh');
 			//$xmlrpc_value=new xmlrpcval;
 
-			if (!xml_parse($parser, $data, sizeof($data)))
+			if (!xml_parse($parser, $data, true))
 			{
 				// thanks to Peter Kocks <peter.kocks@baygate.com>
 				if((xml_get_current_line_number($parser)) == 1)
@@ -1498,7 +1496,7 @@
 		var $me=array();
 		var $mytype=0;
 
-		function xmlrpcval($val=-1, $type='')
+		function __construct($val=-1, $type='')
 		{
 			global $xmlrpcTypes;
 			$this->me=array();
@@ -1598,12 +1596,12 @@
 		function dump($ar)
 		{
 			reset($ar);
-			while ( list( $key, $val ) = each( $ar ) )
+			foreach ($ar as $key => $val)
 			{
 				echo "$key => $val<br>";
 				if ($key == 'array')
 				{
-					while ( list( $key2, $val2 ) = each( $val ) )
+					foreach ($val as $key2 => $val2)
 					{
 						echo "-- $key2 => $val2<br>";
 					}
@@ -1640,9 +1638,9 @@
 					// struct
 					$rs.="<struct>\n";
 					reset($val);
-					while(list($key2, $val2)=each($val))
+					foreach($val as $key2 => $val2)
 					{
-						$rs.="<member><name>${key2}</name>\n";
+						$rs.="<member><name>{$key2}</name>\n";
 						$rs.=$this->serializeval($val2);
 						$rs.="</member>\n";
 					}
@@ -1661,19 +1659,19 @@
 					switch ($typ)
 					{
 						case $xmlrpcBase64:
-							$rs.="<${typ}>" . base64_encode($val) . "</${typ}>";
+							$rs.="<{$typ}>" . base64_encode($val) . "</{$typ}>";
 							break;
 						case $xmlrpcBoolean:
-							$rs.="<${typ}>" . ($val ? '1' : '0') . "</${typ}>";
+							$rs.="<{$typ}>" . ($val ? '1' : '0') . "</{$typ}>";
 							break;
 						case $xmlrpcString:
 							// G. Giunta 2005/2/13: do NOT use htmlentities, since
 							// it will produce named html entities, which are invalid xml
-							$rs.="<${typ}>" . xmlrpc_encode_entitites($val). "</${typ}>";
+							$rs.="<{$typ}>" . xmlrpc_encode_entitites($val). "</{$typ}>";
 							// $rs.="<${typ}>" . htmlentities($val). "</${typ}>";
 							break;
 						default:
-							$rs.="<${typ}>${val}</${typ}>";
+							$rs.="<{$typ}>{$val}</{$typ}>";
 					}
 					break;
 				default:
@@ -1693,7 +1691,8 @@
 			$rs='';
 			$ar=$o->me;
 			reset($ar);
-			list($typ, $val) = each($ar);
+			$typ = key($ar);
+			$val = current($ar);
 			$rs.='<value>';
 			$rs.=$this->serializedata($typ, $val);
 			$rs.="</value>\n";
@@ -1713,7 +1712,12 @@
 
 		function structeach()
 		{
-			return each($this->me['struct']);
+			$__k = key($this->me['struct']);
+			if ($__k === null)
+				return false;
+			$__v = current($this->me['struct']);
+			next($this->me['struct']);
+			return array(0 => $__k, 1 => $__v, 'key' => $__k, 'value' => $__v);
 		}
 
 		function getval()
@@ -1721,7 +1725,8 @@
 			// UNSTABLE
 			global $xmlrpcBoolean, $xmlrpcBase64;
 			reset($this->me);
-			list($a,$b)=each($this->me);
+			$a = key($this->me);
+			$b = current($this->me);
 			// contributed by I Sofer, 2001-03-24
 			// add support for nested arrays to scalarval
 			// i've created a new method here, so as to
@@ -1730,7 +1735,7 @@
 			if (is_array($b))
 			{
 				@reset($b);
-				while(list($id,$cont) = @each($b))
+				foreach($b as $id => $cont)
 				{
 					$b[$id] = $cont->scalarval();
 				}
@@ -1741,12 +1746,12 @@
 			{
 				$t = get_object_vars($b);
 				@reset($t);
-				while(list($id,$cont) = @each($t))
+				foreach($t as $id => $cont)
 				{
 					$t[$id] = $cont->scalarval();
 				}
 				@reset($t);
-				while(list($id,$cont) = @each($t))
+				foreach($t as $id => $cont)
 				{
 					eval('$b->'.$id.' = $cont;');
 				}
@@ -1759,7 +1764,8 @@
 		{
 			//global $xmlrpcBoolean, $xmlrpcBase64;
 			reset($this->me);
-			list($a,$b)=each($this->me);
+			$a = key($this->me);
+			$b = current($this->me);
 			return $b;
 		}
 
@@ -1767,7 +1773,8 @@
 		{
 			global $xmlrpcI4, $xmlrpcInt;
 			reset($this->me);
-			list($a,$b)=each($this->me);
+			$a = key($this->me);
+			$b = current($this->me);
 			if ($a==$xmlrpcI4)
 			{
 				$a=$xmlrpcInt;
@@ -1784,7 +1791,8 @@
 		function arraysize()
 		{
 			reset($this->me);
-			list($a,$b)=each($this->me);
+			$a = key($this->me);
+			$b = current($this->me);
 			return sizeof($b);
 		}
 	}
@@ -1826,7 +1834,7 @@
 	{
 		// return a timet in the localtime, or UTC
 		$t=0;
-		if (ereg("([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})", $idate, $regs))
+		if (preg_match("/([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})/", $idate, $regs))
 		{
 			if ($utc)
 			{
@@ -1947,7 +1955,7 @@
 			case 'array':
 			case 'object':
 				$arr = array();
-				while (list($k,$v) = each($php_val))
+				foreach($php_val as $k => $v)
 				{
 					$arr[$k] = php_xmlrpc_encode($v);
 				}
@@ -1999,7 +2007,7 @@
 				case 'array':
 				case 'object':
 					$arr = array();
-					while (list($k,$v) = each($php_val))
+					foreach($php_val as $k => $v)
 					{
 						$arr[$k] = xmlrpc_encode($v);
 					}

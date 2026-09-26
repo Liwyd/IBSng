@@ -577,7 +577,7 @@ class PolarAxis extends Axis {
 class PolarScale extends LinearScale {
     private $graph;
 
-    function __construct($aMax=0,$graph) {
+    function __construct($aMax,$graph) {
         parent::__construct(0,$aMax,'x');
         $this->graph = $graph;
     }
@@ -609,7 +609,7 @@ class PolarScale extends LinearScale {
 
 class PolarLogScale extends LogScale {
     private $graph;
-    function __construct($aMax=1,$graph) {
+    function __construct($aMax,$graph) {
         parent::__construct(0,$aMax,'x');
         $this->graph = $graph;
         $this->ticks->SetLabelLogType(LOGLABELS_MAGNITUDE);

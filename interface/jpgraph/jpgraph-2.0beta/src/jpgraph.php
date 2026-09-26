@@ -3013,7 +3013,7 @@ class GraphTabTitle extends Text{
     private $corner = 6 , $posx = 7, $posy = 4;
     private $fillcolor='lightyellow',$bordercolor='black';
     private $align = 'left', $width=TABTITLE_WIDTHFIT;
-    function GraphTabTitle() {
+    function __construct() {
         $this->t = '';
         $this->font_style = FS_BOLD;
         $this->hide = true;
@@ -5790,7 +5790,7 @@ class Image {
     }
         
 
-    function _StrokeBuiltinFont($x,$y,$txt,$dir=0,$paragraph_align="left",&$aBoundingBox,$aDebug=false) {
+    function _StrokeBuiltinFont($x,$y,$txt,$dir,$paragraph_align,&$aBoundingBox,$aDebug=false) {
 
         if( is_numeric($dir) && $dir!=90 && $dir!=0) 
             JpGraphError::Raise(" Internal font does not support drawing text at arbitrary angle. Use TTF fonts instead.");
@@ -5940,7 +5940,7 @@ class Image {
         return $box[2]-$box[0]+1;       
     }
 
-    function _StrokeTTF($x,$y,$txt,$dir=0,$paragraph_align="left",&$aBoundingBox,$debug=false) {
+    function _StrokeTTF($x,$y,$txt,$dir,$paragraph_align,&$aBoundingBox,$debug=false) {
 
         // Setupo default inter line margin for paragraphs to
         // 25% of the font height.

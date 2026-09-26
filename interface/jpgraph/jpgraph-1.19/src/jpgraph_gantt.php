@@ -3412,7 +3412,7 @@ class MileStone extends GanttPlotObject {
 //===================================================
 
 class TextPropertyBelow extends TextProperty {
-    function TextPropertyBelow($aTxt='') {
+    function __construct($aTxt='') {
         parent::__construct($aTxt);
     }
 

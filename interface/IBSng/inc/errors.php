@@ -9,8 +9,9 @@ $ERRORS=array("INVALID_ERROR"=>"Invalid/Unknown error",
 
 
 
-class Error
+class IBSError
 { /* This Class is for errors reported from core or interface.
+     Named IBSError because PHP 7+ reserves the builtin class name Error.
      Normally errors should consist of lines of ( keys and  messages), formated in a string like "key|msg"
      key shows what is error about and msg is the error message for this situation
 
@@ -78,9 +79,9 @@ function error($error_key)
 {/* return complete error message of $error_key */
     global $ERRORS;
     if (isset($ERRORS[$error_key]))
-        return new Error($error_key."|".$ERRORS[$error_key]);
+        return new IBSError($error_key."|".$ERRORS[$error_key]);
     else
-        return new Error($ERRORS["INVALID_ERROR"]);
+        return new IBSError($ERRORS["INVALID_ERROR"]);
 }
 
 

@@ -25,7 +25,7 @@ DEFINE("BAND_DIAGCROSS",8); // Diagonal crosses
 class Rectangle {
     public $x,$y,$w,$h;
     public $xe, $ye;
-    function Rectangle($aX,$aY,$aWidth,$aHeight) {
+    function __construct($aX,$aY,$aWidth,$aHeight) {
         $this->x=$aX;
         $this->y=$aY;
         $this->w=$aWidth;

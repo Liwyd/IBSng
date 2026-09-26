@@ -91,7 +91,7 @@ class RadarLinearTicks extends Ticks { // extends LinearTicks {
 
 //---------------
 // CONSTRUCTOR
-    function RadarLinearTicks() {
+    function __construct() {
         // Empty
     }
 
@@ -295,7 +295,7 @@ class RadarGrid { //extends Grid {
 
 //------------
 // CONSTRUCTOR
-    function RadarGrid() {
+    function __construct() {
     }
 
 // PUBLIC METHODS
