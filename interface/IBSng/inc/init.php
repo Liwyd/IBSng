@@ -12,6 +12,12 @@ require_once (IBSINC."lang.php");
 session_init();
 auth_init();
 
+// baseline response hardening; SAMEORIGIN keeps the admin UI's own
+// iframes working while blocking cross-site framing
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("Referrer-Policy: same-origin");
+
 require_once (IBSINC."referrer.php");
 
 ?>

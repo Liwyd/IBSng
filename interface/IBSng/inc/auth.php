@@ -52,7 +52,10 @@ function adminAuth($auth_name,$auth_pass)
 function doAuth($auth_name,$auth_pass,$auth_type)
 {
     $auth_obj=new Auth($auth_name,$auth_pass,$auth_type);
-    return array($auth_obj->successful(),$auth_obj->getAuthMsg());
+    $success=$auth_obj->successful();
+    if($success && session_status()===PHP_SESSION_ACTIVE)
+        session_regenerate_id(true); // defeat session fixation
+    return array($success,$auth_obj->getAuthMsg());
 }
 
 function showAccessDenied($auth_type)

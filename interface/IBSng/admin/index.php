@@ -19,7 +19,7 @@ function doLogin($username,$password)
 
 function goAdminIndex()
 {
-    if(isInRequest("target") and preg_match("/^\/[a-zA-Z0-9_\/=\?\.]+$/",$_REQUEST["target"]))
+    if(isInRequest("target") and preg_match("/^\/[a-zA-Z0-9_\/=\?\.]+$/",$_REQUEST["target"]) and strpos($_REQUEST["target"],"//")!==0)
         redirect($_REQUEST["target"]);
     else
         redirect("/IBSng/admin/admin_index.php");
