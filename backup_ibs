@@ -1,19 +1,48 @@
 #!/bin/bash
+#
+# Dump the IBSng database to a plain SQL file (optionally gzip-compressed
+# when the target name ends in .gz).
+#
+# Environment:
+#   IBS_BACKUP_DB          database name     (default: IBSng)
+#   IBS_BACKUP_NO_SU=1     run pg_dump as the current user instead of
+#                          "su postgres" - for containers / non-standard
+#                          layouts where PGHOST, PGPORT, PGUSER and
+#                          PGPASSWORD already describe the connection
 
-# Check if backup path is provided as an argument
-if [ -z "$1" ]; then
+set -euo pipefail
+
+DB_NAME="${IBS_BACKUP_DB:-IBSng}"
+
+case "$DB_NAME" in
+  *[!A-Za-z0-9_]* | "")
+    echo "Error: invalid database name '$DB_NAME'." >&2
+    exit 1
+    ;;
+esac
+
+if [ $# -ne 1 ] || [ -z "$1" ]; then
   echo "Error: Backup path is missing."
-  echo "Usage: $0 /path/to/backup.sql"
+  echo "Usage: $0 /path/to/backup.sql[.gz]"
   exit 1
 fi
-
 BACKUP_PATH="$1"
 
-# Backup the IBSng database
-su postgres -c "pg_dump IBSng > /var/lib/pgsql/IBSng.sql"
+dump_db() {
+  if [ "${IBS_BACKUP_NO_SU:-0}" = "1" ] || [ "$(id -un)" = "postgres" ]; then
+    pg_dump "$DB_NAME"
+  else
+    su postgres -c "pg_dump '$DB_NAME'"
+  fi
+}
 
-# Copy the backup file to the user-specified path
-cp /var/lib/pgsql/IBSng.sql "$BACKUP_PATH"
+case "$BACKUP_PATH" in
+  *.gz)
+    dump_db | gzip -9 > "$BACKUP_PATH"
+    ;;
+  *)
+    dump_db > "$BACKUP_PATH"
+    ;;
+esac
 
-# Notify the user that the backup is ready
 echo "Your backup is ready at: $BACKUP_PATH"

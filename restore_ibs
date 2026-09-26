@@ -1,33 +1,87 @@
 #!/bin/bash
+#
+# Restore the IBSng database from a plain SQL dump created by backup_ibs
+# (plain or gzip-compressed). The IBSng service is stopped for the restore
+# and started again afterwards - also when the restore fails.
+#
+# Environment:
+#   IBS_BACKUP_DB            database name     (default: IBSng)
+#   IBS_BACKUP_NO_SU=1       run as the current user instead of "su postgres"
+#                            (see backup_ibs)
+#   IBS_BACKUP_SKIP_SERVICE=1  do not touch the IBSng service (containers,
+#                            test environments)
 
-# Check if the backup file path is provided as an argument
-if [ -z "$1" ]; then
+set -euo pipefail
+
+DB_NAME="${IBS_BACKUP_DB:-IBSng}"
+
+case "$DB_NAME" in
+  *[!A-Za-z0-9_]* | "")
+    echo "Error: invalid database name '$DB_NAME'." >&2
+    exit 1
+    ;;
+esac
+
+if [ $# -ne 1 ] || [ -z "$1" ]; then
   echo "Error: Backup file path is missing."
-  echo "Usage: $0 /path/to/backup.sql"
+  echo "Usage: $0 /path/to/backup.sql[.gz]"
   exit 1
 fi
-
 BACKUP_FILE="$1"
 
-# Check if the backup file exists
 if [ ! -f "$BACKUP_FILE" ]; then
-  echo "Error: Backup file not found at $BACKUP_FILE"
+  echo "Error: Backup file not found at $BACKUP_FILE" >&2
   exit 1
 fi
 
-# Stop the IBSng service
-service IBSng stop
+manage_service() {
+  if [ "${IBS_BACKUP_SKIP_SERVICE:-0}" = "1" ]; then
+    return 0
+  fi
+  service IBSng "$1"
+}
 
-# Drop the existing IBSng database
-su postgres -c "dropdb IBSng"
+pg_run() {
+  if [ "${IBS_BACKUP_NO_SU:-0}" = "1" ] || [ "$(id -un)" = "postgres" ]; then
+    "$@"
+  else
+    su postgres -c "$*"
+  fi
+}
 
-# Create a new IBSng database
-su postgres -c "createdb IBSng"
+# pg_dump >= 18 writes "SET transaction_timeout = 0;" (a server >= 17 GUC)
+# into plain dumps.  Servers <= 16 reject it, and ON_ERROR_STOP would then
+# abort the restore.  Strip only those SET lines - and never inside COPY
+# blocks, where user data must stay byte-identical.
+strip_unsupported_settings() {
+  awk '
+    /^COPY .* FROM stdin;$/ { in_copy = 1; print; next }
+    /^\\\.$/                { if (in_copy) { in_copy = 0; print; next } }
+    {
+      if (!in_copy && $0 ~ /^SET transaction_timeout = /) next
+      print
+    }'
+}
 
-# Restore the database from the backup file
-su postgres -c "psql IBSng < $BACKUP_FILE"
+# Stop the IBSng service so no sessions hold locks on the database
+manage_service stop
 
-# Start the IBSng service
-service IBSng start
+# Never leave the system without a service after a failed restore
+trap 'manage_service start || true' EXIT
 
+# Recreate the database from scratch
+pg_run dropdb --if-exists "$DB_NAME"
+pg_run createdb "$DB_NAME"
+
+# Restore the database from the backup file; stop at the first error
+if [[ "$BACKUP_FILE" == *.gz ]]; then
+  gunzip -c "$BACKUP_FILE" | strip_unsupported_settings \
+    | pg_run psql -v ON_ERROR_STOP=1 -q "$DB_NAME"
+else
+  strip_unsupported_settings < "$BACKUP_FILE" \
+    | pg_run psql -v ON_ERROR_STOP=1 -q "$DB_NAME"
+fi
+
+trap - EXIT
+manage_service start
 echo "Database restoration completed successfully."
