@@ -32,6 +32,7 @@ Erick Tryzelaar
 $Revision: 1.106 $
 $Date: 2005/08/12 17:42:39 $
 """
+from functools import reduce
 
 
 try:
@@ -48,7 +49,7 @@ try:
     import fcntl
     import errno
     import traceback
-except ImportError, e:
+except ImportError as e:
     raise ImportError (str(e) + """
 A critical module was not found. Probably this operating system does not support it.
 Pexpect is intended for UNIX-like operating systems.""")
@@ -70,7 +71,7 @@ class ExceptionPexpect(Exception):
         In other words, the stack trace inside the Pexpect module is not included.
         """
         tblist = traceback.extract_tb(sys.exc_info()[2])
-        tblist = filter(self.__filter_not_pexpect, tblist)
+        tblist = list(filter(self.__filter_not_pexpect, tblist))
         tblist = traceback.format_list(tblist)
         return ''.join(tblist)
     def __filter_not_pexpect(self, trace_list_item):
@@ -249,7 +250,7 @@ class spawn:
 
         try:
             self.pid, self.child_fd = pty.fork()
-        except OSError, e:
+        except OSError as e:
             raise ExceptionPexpect('Pexpect: pty.fork() failed: ' + str(e))
 
         if self.pid == 0: # Child
@@ -301,7 +302,7 @@ class spawn:
                     pid, status = os.waitpid (self.pid, 0)
                     if os.WIFEXITED (status):
                         self.exitstatus = os.WEXITSTATUS(status)
-                except OSError, e: ### suggested by Robert Stone
+                except OSError as e: ### suggested by Robert Stone
                     if e[0] == errno.ECHILD:
                         pass
                     else:
@@ -390,7 +391,7 @@ class spawn:
         if self.child_fd in r:
             try:
                 s = os.read(self.child_fd, size)
-            except OSError, e:
+            except OSError as e:
                 self.flag_eof = 1
                 raise EOF ('End Of File (EOF) in read_nonblocking(). Exception style platform.')
             if s == '':
@@ -453,7 +454,7 @@ class spawn:
         """This is to support interators over a file-like object.
         """
         return self
-    def next (self):
+    def __next__ (self):
         """This is to support iterators over a file-like object.
         """
         result = self.readline()
@@ -810,7 +811,7 @@ class spawn:
                         raise TIMEOUT ('Timeout exceeded in expect_list().')
                 c = self.read_nonblocking (self.maxread, timeout)
                 incoming = incoming + c
-        except EOF, e:
+        except EOF as e:
             self.buffer = ''
             self.before = incoming
             self.after = EOF
@@ -822,7 +823,7 @@ class spawn:
                 self.match = None
                 self.match_index = None
                 raise EOF (str(e) + '\n' + str(self))
-        except TIMEOUT, e:
+        except TIMEOUT as e:
             self.before = incoming
             self.after = TIMEOUT
             if TIMEOUT in pattern_list:
@@ -867,7 +868,7 @@ class spawn:
         # Newer versions of Linux have totally different values for TIOCSWINSZ.
         # Note that this fix is a hack.
         TIOCSWINSZ = termios.TIOCSWINSZ
-        if TIOCSWINSZ == 2148037735L: # L is not required in Python >= 2.2.
+        if TIOCSWINSZ == 2148037735: # L is not required in Python >= 2.2.
             TIOCSWINSZ = -2146929561 # Same bits, but with sign.
 
         # Note, assume ws_xpixel and ws_ypixel are zero.
@@ -933,7 +934,7 @@ def _which (filename):
         if os.access (filename, os.X_OK):
             return filename
 
-    if not os.environ.has_key('PATH') or os.environ['PATH'] == '':
+    if 'PATH' not in os.environ or os.environ['PATH'] == '':
         p = os.defpath
     else:
         p = os.environ['PATH']

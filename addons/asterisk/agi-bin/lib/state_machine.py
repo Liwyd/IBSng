@@ -24,7 +24,7 @@ class StateMachine:
         last_state=self.cur_state
         self.cur_state=state_name
         try:
-            ret_val=apply(self.__getState(state_name),args)
+            ret_val=self.__getState(state_name)(*args)
         except KeyError:
             toLog("StateMachine: State %s not found"%state_name)
             ret_val == None
@@ -33,4 +33,4 @@ class StateMachine:
         return ret_val
     
     def start(self):
-        return apply(self.states[self.cur_state],[])
+        return self.states[self.cur_state](*[])

@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -19,7 +19,7 @@ def callEnd(duration, status):
         if ibs_agi.getConfig().getValue("debug"):
             toLog("CallEnd: duration %s used_credit %s"%(duration,used_credit))
 
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         logException()
         duration=used_credit=0
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import ibs_agi
 ibs_agi.init()
 #digits=ibs_agi.getLangManager().getLanguage("fa").sayFilesAndCollect("1",8)

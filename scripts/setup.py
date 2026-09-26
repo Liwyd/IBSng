@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import curses
 import sys
 import os
 import stat
 import re
+import importlib
 
 def cursesMain(stdscr):
     setupMainWindow(stdscr)
@@ -130,9 +131,10 @@ def testDB(stdscr,menu,log):
 
 def getDBConnection():
     from core import db_conf
-    reload(db_conf)
+    importlib.reload(db_conf)
     import pg
-    con=pg.connect("IBSng",db_conf.DB_HOST,db_conf.DB_PORT,None,None,db_conf.DB_USERNAME,db_conf.DB_PASSWORD)
+    con=pg.connect(dbname="IBSng",host=db_conf.DB_HOST,port=db_conf.DB_PORT,
+                           user=db_conf.DB_USERNAME,passwd=db_conf.DB_PASSWORD)
     return con
 #######################################
 def installEditDefs(stdscr,menu,log):
@@ -477,7 +479,7 @@ class MenuWindow:
                 continue
             break
         if method!=None:
-            return apply(method,[stdscr,menu,log])
+            return method(*[stdscr,menu,log])
         else:
             return ch
 
@@ -507,7 +509,7 @@ class LogWindow:
         """
             write line(s) to log window
         """
-        map(self.__write,_str.split("\n"))      
+        list(map(self.__write,_str.split("\n")))      
     
     def __write(self,_str):
         self.window.addstr(self.lasty,0,_str)

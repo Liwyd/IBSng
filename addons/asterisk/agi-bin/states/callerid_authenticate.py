@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -13,7 +13,7 @@ def callerIDAuthenticate():
     req=request.Request()
     try:
         (username,credit,language)=req.send("preAuthenticate",True)
-    except xmlrpclib.Fault:
+    except xmlrpc.client.Fault:
         credit=0
     else:
         ibs_agi.getConfig().setValue("authenticated",True)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 """pyst
 
@@ -51,7 +51,7 @@ class AGI:
             key,data = line.split(':')[0], ':'.join(line.split(':')[1:])
             key = key.strip()
             data = data.strip()
-            if key <> '':
+            if key != '':
                 self.env[key] = data
         sys.stderr.write('class AGI: self.env = ')
         sys.stderr.write(pprint.pformat(self.env))
@@ -61,7 +61,7 @@ class AGI:
         try:
             self.send_command(command, *args)
             return self.get_result()
-        except IOError,e:
+        except IOError as e:
             if e.errno == 32:
                 # Broken Pipe * let us go
                 sys.exit(1)

@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-import xmlrpclib
+import xmlrpc.client
 import sys
 import os
 
 
 def printUsage():
-    print """
+    print("""
         Usage: client.py <filename> <system password> [-fo]
         
             filename: filename containing python codes to run in running ibs
@@ -17,7 +17,7 @@ def printUsage():
                 this causes server not to fork for collecting output.
                 Forking make problem with db connections and has some other issues
     
-    """
+    """)
     
 
 def readFile(file_name):
@@ -27,7 +27,7 @@ def readFile(file_name):
     return contents
 
 def sendRequest(contents, system_password, read_from_file = False, no_output = False):
-    server=xmlrpclib.ServerProxy("http://localhost:1235")
+    server=xmlrpc.client.ServerProxy("http://localhost:1235")
     args={"command":contents,
           "auth_name":"system",
           "auth_pass":system_password,
@@ -67,7 +67,7 @@ def main():
 
     result=sendRequest(contents, system_password, read_from_file, no_output)
 
-    print result
+    print(result)
 
 if __name__=="__main__":
     main()

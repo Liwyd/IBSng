@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -13,7 +13,7 @@ def deleteCallerIDAuthentication():
     req=request.Request()
     try:
         last_number=req.send("deleteCallerIDAuthentication",True)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         if e.faultString=="CALLER_ID_NOT_EXISTS":
             ibs_agi.getSelectedLanguage().sayPrompt("delete_callerid_authentication_not_exists")
         else:

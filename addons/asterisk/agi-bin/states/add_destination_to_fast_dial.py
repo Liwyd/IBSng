@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -19,7 +19,7 @@ def addDestinationToFastDial(_index, destination):
     req=request.Request()
     try:
         last_number=req.send("addDestinationToFastDial",True,index=_index,destination=destination)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         logException()
         ibs_agi.getSelectedLanguage().sayPrompt("add_destination_to_fast_dial_failure")
         return 

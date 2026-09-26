@@ -43,7 +43,7 @@ class AnalyzeConfig(Config):
         if os.path.exists(passed_conf_path) and os.path.isfile(passed_conf_path):
             return passed_conf_path
         else:
-            print "ERROR: squid_analyzer.conf File, not fount. Exiting"
+            print("ERROR: squid_analyzer.conf File, not fount. Exiting")
             sys.exit(-1)
             
 

@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -14,7 +14,7 @@ def checkOldPassword(old_password):
     req=request.Request()
     try:
         pass_correct=req.send("checkPassword",True,password=old_password)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         logException()
         return 
     else:

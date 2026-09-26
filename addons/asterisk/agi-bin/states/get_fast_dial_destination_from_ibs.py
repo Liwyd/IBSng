@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -15,7 +15,7 @@ def getFastDialIndexFromIBS(_index):
     req=request.Request()
     try:
         destination=req.send("getFastDialDestination",True,index=_index)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         logException()
         ibs_agi.getSelectedLanguage().sayPrompt("unknown_problem")
         raise IBSException(e.faultString)

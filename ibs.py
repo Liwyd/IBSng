@@ -1,5 +1,5 @@
-#! /usr/bin/python -W ignore::: -OO 
-print "importing required files ..."
+#!/usr/bin/env -S python3 -W ignore -OO
+print("importing required files ...")
 import signal
 import sys
 import os
@@ -22,10 +22,10 @@ def termSigHandler(signum,frame):
     
 def childWaitSigHandler(signum,frame):
     if signum==signal.SIGUSR1: #successfully started
-        print "IBSng started successfully!"
+        print("IBSng started successfully!")
         sys.exit(0)
     else:
-        print "IBSng Failed to start!"
+        print("IBSng Failed to start!")
         sys.exit(1)
         
 def handleUserDefinedSignals(handler):
@@ -34,7 +34,7 @@ def handleUserDefinedSignals(handler):
 
 def mainThreadInitialize():
     mainThreadSignalHandlers()
-    print "Calling Initializer routins"
+    print("Calling Initializer routins")
     thread_debug.debug_me()
 
     core.main.init()
@@ -56,16 +56,16 @@ def writePID(pid):
 
 def start():
     handleUserDefinedSignals(childWaitSigHandler)
-    print "forking ..."
+    print("forking ...")
     pid=os.fork()
-    print "IBSng started with pid=%d"%pid
+    print("IBSng started with pid=%d"%pid)
     if pid == 0:
         try:
             try:
                 mainThreadInitialize()
                 os.kill(os.getppid(),signal.SIGUSR1)
             except:
-                print "Shutting down on error"
+                print("Shutting down on error")
                 os.kill(os.getppid(),signal.SIGUSR2)
                 raise
         except:
@@ -74,10 +74,10 @@ def start():
             logToSysLog(err_text)
             core.main.mainThreadShutdown()
 
-        print "Successfully initialized, entering event loop ..."
+        print("Successfully initialized, entering event loop ...")
         writePID(os.getpid())
 
-        sys.setcheckinterval(500)
+        sys.setswitchinterval(0.005)
         event.startLoop()
     
     else:

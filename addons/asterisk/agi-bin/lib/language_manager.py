@@ -13,7 +13,7 @@ class LanguageManager:
                 languages=__import__("languages.%s"%lang)
                 lang_module=getattr(languages,lang)
                 lang_class=getattr(lang_module,lang)
-                lang_obj=apply(lang_class,[])
+                lang_obj=lang_class(*[])
                 self.languages.append((lang,lang_obj))
             except ImportError:
                 logException("Can't find language %s"%lang)

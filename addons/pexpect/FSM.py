@@ -70,7 +70,7 @@ class ExceptionFSM(Exception):
     def __init__(self, value):
         self.value = value
     def __str__(self):
-        return `self.value`
+        return repr(self.value)
 
 class FSM:
     '''This is a Finite State Machine (FSM).
@@ -158,9 +158,9 @@ class FSM:
            This is a handler for errors, undefined states, or defaults.
         4. No transition was defined. If we get here then raise an exception.
         '''
-        if self.state_transitions.has_key((input_symbol, self.current_state)):
+        if (input_symbol, self.current_state) in self.state_transitions:
             return self.state_transitions[(input_symbol, self.current_state)]
-        elif self.state_transitions_any.has_key (self.current_state):
+        elif self.current_state in self.state_transitions_any:
             return self.state_transitions_any[self.current_state]
         elif self.default_transition != None:
             return self.default_transition
@@ -231,10 +231,10 @@ def DoOperator (fsm):
     elif fsm.input_symbol == '/':
         fsm.something.append (al / ar)
 def DoEqual (fsm):
-    print str(fsm.something.pop())
+    print(str(fsm.something.pop()))
 def Error (fsm):
-    print 'That does not compute.'
-    print str(fsm.input_symbol)
+    print('That does not compute.')
+    print(str(fsm.input_symbol))
 
 #
 # This is where the example starts and the FSM state transitions are defined.
@@ -251,13 +251,13 @@ def example ():
     f.add_transition_list (string.whitespace, 'BUILDING_NUMBER', EndBuildNumber,   'INIT')
     f.add_transition_list ('+-*/',            'INIT',            DoOperator,       'INIT')
     
-    print
-    print 'Enter an RPN Expression.'
-    print 'Numbers may be integers. Operators are * / + -'
-    print 'Use the = sign to evaluate and print the expression.'
-    print 'For example: '
-    print '    167 3 2 2 * * * 1 - ='
-    inputs = raw_input ('>')
+    print()
+    print('Enter an RPN Expression.')
+    print('Numbers may be integers. Operators are * / + -')
+    print('Use the = sign to evaluate and print the expression.')
+    print('For example: ')
+    print('    167 3 2 2 * * * 1 - =')
+    inputs = input ('>')
     for s in inputs:
         f.process (s)
 

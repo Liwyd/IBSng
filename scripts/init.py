@@ -1,5 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 import sys
+import importlib
 
 sys.path.append("/usr/local/IBSng")
 import curses
@@ -19,17 +20,15 @@ selinux_config_file = "/etc/selinux/config"
 def getDBConnection():
     from core import db_conf
 
-    reload(db_conf)
+    importlib.reload(db_conf)
     import pg
 
     con = pg.connect(
-        "IBSng",
-        db_conf.DB_HOST,
-        db_conf.DB_PORT,
-        None,
-        None,
-        db_conf.DB_USERNAME,
-        db_conf.DB_PASSWORD,
+        dbname="IBSng",
+        host=db_conf.DB_HOST,
+        port=db_conf.DB_PORT,
+        user=db_conf.DB_USERNAME,
+        passwd=db_conf.DB_PASSWORD,
     )
     return con
 

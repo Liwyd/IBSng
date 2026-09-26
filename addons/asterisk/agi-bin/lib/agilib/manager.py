@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """manager.py
 
@@ -9,10 +9,10 @@ Interface for Asterisk Manager
 import sys,os
 import socket
 import threading
-import Queue
+import queue
 import re
 from select import select
-from cStringIO import StringIO
+from io import StringIO
 from types import *
 from time import sleep
 
@@ -31,7 +31,7 @@ class ManagerMsg(object):
             #            'Response:'
 
     def parse(self, response):
-        print response.getvalue()
+        print(response.getvalue())
         response.seek(0)
         #print response.getvalue()
         data = []
@@ -51,7 +51,7 @@ class ManagerMsg(object):
         self.data = '%s\n' % '\n'.join(data)
 
     def has_header(self, hname):
-        return self.headers.has_key(hname)
+        return hname in self.headers
 
     def get_header(self, hname):
         return self.headers[hname]
@@ -110,9 +110,9 @@ class Manager(object):
         self.sock = None
         self.sockf = None
         self.connected = 0
-        self.message_queue = Queue.Queue()
-        self.response_queue = Queue.Queue()
-        self.event_queue = Queue.Queue()
+        self.message_queue = queue.Queue()
+        self.response_queue = queue.Queue()
+        self.event_queue = queue.Queue()
         self.reswaiting = []
         self._seqlock = threading.Lock()
         self._seq = 0
@@ -133,7 +133,7 @@ class Manager(object):
         cdict.update(kwargs)
         cdict['ActionID'] = '%s-%08x' % (self.hostname, self.next_seq())
         clist = []
-        for item in cdict.items():
+        for item in list(cdict.items()):
             #print item
             item = tuple([str(x) for x in item])
             clist.append('%s: %s' % item)
@@ -187,7 +187,7 @@ class Manager(object):
                                 line = ''.join(line)
                                 break
                         assert type(line) in StringTypes
-                        print line
+                        print(line)
                         lines.append(line)
                         if line == EOL:
                             break
@@ -220,7 +220,7 @@ class Manager(object):
                 elif message.has_header('Response'):
                     self.response_queue.put(message)
                 else:
-                    print 'No clue what we got\n%s' % message.data
+                    print('No clue what we got\n%s' % message.data)
         finally:
             t.join()
                             
@@ -363,7 +363,7 @@ class ManagerSocketException(ManagerException): pass
 if __name__=='__main__':
     from pprint import pprint
     def spew(event):
-        print 'EVENT: ', event.name
+        print('EVENT: ', event.name)
         pprint(event.headers)
         pprint(event.data)
 

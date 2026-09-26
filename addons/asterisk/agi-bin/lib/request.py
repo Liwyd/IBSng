@@ -1,5 +1,5 @@
 import ibs_agi
-import xmlrpclib
+import xmlrpc.client
 
 class IBSRequest:
     def __init__(self, auth_name, auth_pass, auth_type):
@@ -8,7 +8,7 @@ class IBSRequest:
         self.auth_type=auth_type
 
     def send(self, method_name, **kargs):
-        server=xmlrpclib.ServerProxy("http://%s:%s"%ibs_agi.getConfig().getValue("IBSng_server"))
+        server=xmlrpc.client.ServerProxy("http://%s:%s"%ibs_agi.getConfig().getValue("IBSng_server"))
         kargs["auth_type"]=self.auth_type
         kargs["auth_name"]=self.auth_name
         kargs["auth_pass"]=self.auth_pass
@@ -36,4 +36,4 @@ class Request(IBSRequest):
             kargs["channel"]=ibs_agi.getConfig().getValue("channel")
             kargs["unique_id"]=ibs_agi.getConfig().getValue("unique_id")
 
-        return apply(IBSRequest.send,[self,"asterisk.%s"%method_name],kargs)
+        return IBSRequest.send(*[self,"asterisk.%s"%method_name], **kargs)

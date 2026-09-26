@@ -136,7 +136,7 @@ class Language:
             say number until one of escape digits pressed. return the digit pressed
             return empty string if no digits was pressed until end of prompt
         """
-        number=long(number)
+        number=int(number)
         return self.sayFiles(self.sayNumberCreateList(number))
 
     def sayNumberCreateList(self, number):
@@ -186,9 +186,9 @@ class Language:
             WARNING: both "hour" and "hours" sound files should exists even if they are same
         """
         time_seconds=int(time_seconds)
-        hours=time_seconds/3600
+        hours=time_seconds//3600
         rest=time_seconds%3600
-        minutes=rest/60
+        minutes=rest//60
         seconds=rest%60
         
         list=[]

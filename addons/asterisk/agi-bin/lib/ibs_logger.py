@@ -4,7 +4,7 @@ import os
 import sys
 
 class Logger:
-    PERMISSION=0600
+    PERMISSION=0o600
     
     def __init__(self,file_name):
         self.re_open=False
@@ -16,10 +16,11 @@ class Logger:
         try:
             self.fd=open(self.file_name,"a+")
             self.__chmodFile()
-        except IOError,(errno,errStr):
+        except IOError as xxx_todo_changeme1:
+            (errno,errStr) = xxx_todo_changeme1.args
             sys.stderr.write("Warning: Can't open log file %s\n" % errStr)
             raise
-        except Exception,e:
+        except Exception as e:
             sys.stderr.write("Warning: Can't open log file %s\n" % errStr)
             raise
     
@@ -42,7 +43,8 @@ class Logger:
         
                 self.fd.flush()
             
-            except IOError,(errNo,errStr):
+            except IOError as xxx_todo_changeme:
+                (errNo,errStr) = xxx_todo_changeme.args
                 if not self.re_open:
                     self.re_open=True
                     self.write(str)

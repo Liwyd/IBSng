@@ -78,21 +78,21 @@ class en(Language):
                 list+=["and"]+self.sayNumberCreateList(rest)
 
         elif number >=1000: #thousands
-            thousands=number/1000
+            thousands=number//1000
             rest=number%1000
             list+=self.sayNumberCreateList(thousands)+["1000"]
             if rest!=0:
                 list+=["and"]+self.sayNumberCreateList(rest)
         
         elif number >=100: #hundred
-            hundreds=number/100
+            hundreds=number//100
             rest=number%100
             list+=self.sayNumberCreateList(hundreds)+["100"]
             if rest!=0:
                 list+=["and"]+self.sayNumberCreateList(rest)
         
         elif number >=20: 
-            tenth=number/10
+            tenth=number//10
             rest=number%10
             list+=[str(tenth*10)]
             if rest!=0:

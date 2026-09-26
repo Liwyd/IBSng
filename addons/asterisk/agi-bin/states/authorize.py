@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -19,7 +19,7 @@ def authorize(destination):
 
         remaining_time=req.send("authorize",True,destination=destination)
 
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         ibs_agi.getSelectedLanguage().sayError(e.faultString)
         remaining_time=-1
 

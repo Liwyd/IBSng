@@ -1,4 +1,4 @@
-#!/usr/bin/python -O
+#!/usr/bin/env -S python3 -O
 """
     Squid Analyzer is a daemon to feed the IBSng Accounting System
     with user's(ip) visited URLs, captured and manipulated from
@@ -33,9 +33,9 @@ def writeToPidFile(pid):
     fd.close()
 
 if __name__ == '__main__':
-    print "forking ..."       
+    print("forking ...")       
     pid=os.fork()
-    print "Web Analyzer daemon started with pid=%d"%pid
+    print("Web Analyzer daemon started with pid=%d"%pid)
     if pid == 0:
         try:
             init()

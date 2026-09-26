@@ -1,4 +1,4 @@
-import xmlrpclib, time
+import xmlrpc.client, time
 
 from analyze_conf import *
 from analyze_exceptions import *
@@ -11,7 +11,7 @@ class WebAnalyzerRequest:
         self.auth_type=auth_type
 
     def send(self, method_name, **kargs):
-        server=xmlrpclib.ServerProxy("http://%s:%s"%(getConf('IBSNG_SERVER_IP'), getConf('IBSNG_SERVER_PORT')))#IBSng_server
+        server=xmlrpc.client.ServerProxy("http://%s:%s"%(getConf('IBSNG_SERVER_IP'), getConf('IBSNG_SERVER_PORT')))#IBSng_server
         kargs["auth_type"]=self.auth_type
         kargs["auth_name"]=self.auth_name
         kargs["auth_pass"]=self.auth_pass
@@ -31,7 +31,7 @@ class Request(WebAnalyzerRequest):
             call method name with dictionary arguments and return the results
         """
         kargs["web_analyzer_password"]= self.web_analyzer_pass
-        return apply(WebAnalyzerRequest.send,[self,"web_analyzer.%s"%method_name],kargs)
+        return WebAnalyzerRequest.send(*[self,"web_analyzer.%s"%method_name], **kargs)
         
 
 class RequestWrapper(threading.Thread):

@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -18,7 +18,7 @@ def addCallerIDAuthentication():
     req=request.Request()
     try:
         last_number=req.send("addCallerIDAuthentication",True)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         logException()
         ibs_agi.getSelectedLanguage().sayPrompt("add_callerid_authentication_failure")
         return 

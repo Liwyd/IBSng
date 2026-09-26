@@ -1,6 +1,7 @@
 from lib.error import *
 import os
-import imp
+import sys
+import importlib.util
 
 class PluginLoader:
     def initPlugins(self,directory):
@@ -33,14 +34,21 @@ class PluginLoader:
         """
         mod_obj_list=[]
         for file_name in file_list:
-            file=None
             try:
                 module_name=file_name[:-3] #remove trailing .py
-                (file,pathname,desc)=imp.find_module(module_name,[directory])
-                mod_obj_list.append(imp.load_module(module_name,file,pathname,desc))
+                pathname=os.path.join(directory,file_name)
+                spec=importlib.util.spec_from_file_location(module_name,pathname)
+                if spec is None or spec.loader is None:
+                    raise ImportError("cannot load %s"%pathname)
+                module_object=importlib.util.module_from_spec(spec)
+                sys.modules[module_name]=module_object
+                try:
+                    spec.loader.exec_module(module_object)
+                except:
+                    sys.modules.pop(module_name,None)
+                    raise
+                mod_obj_list.append(module_object)
             except:
-                if file!=None:
-                    file.close()
                 logException("PluginLoader.__loadModules")
         return mod_obj_list
 
@@ -48,7 +56,7 @@ class PluginLoader:
         """
             return list of all .py files in directory
         """
-        return filter(lambda name: name.endswith(".py"),self.__getFilesList(directory))
+        return [name for name in self.__getFilesList(directory) if name.endswith(".py")]
 
     def __getFilesList(self,directory):
         """

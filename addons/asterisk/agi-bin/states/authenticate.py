@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -14,7 +14,7 @@ def authenticate(username,password):
             toLog("Authenticate: Username %s Password %s"%(username,password))
 
         credit=req.send("authenticate",True,username=username,password=password)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         ibs_agi.getSelectedLanguage().sayError(e.faultString)
         credit=0
 

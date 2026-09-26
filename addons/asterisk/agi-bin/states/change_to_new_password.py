@@ -1,4 +1,4 @@
-import xmlrpclib
+import xmlrpc.client
 import ibs_agi
 from lib import request
 from lib.error import *
@@ -12,7 +12,7 @@ def changeToNewPassword(new_password):
     req=request.Request()
     try:
         req.send("changePassword",True,password=new_password)
-    except xmlrpclib.Fault,e:
+    except xmlrpc.client.Fault as e:
         ibs_agi.getSelectedLanguage().sayPrompt("change_password_failure")
         logException()
         return 

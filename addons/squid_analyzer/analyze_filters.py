@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from analyze_lib import *
 from analyze_exceptions import *
 
@@ -23,7 +23,7 @@ class ObjTypeFilter:
         self.result = []
 
     def __validateURL(self, url):
-        protocol, path = urllib.splittype(url)  
+        protocol, path = urllib.parse.splittype(url)  
         if protocol != 'urlparse':
             return True
             
@@ -144,7 +144,7 @@ class LogPrepare(ObjTypeFilter):
         for item in data:
             splitted_str = item.split()
             _user_ip = splitted_str[2]                  # user_ip
-            if not self.cache.has_key(_user_ip):
+            if _user_ip not in self.cache:
                 self.cache[_user_ip] = []
 
             record = []

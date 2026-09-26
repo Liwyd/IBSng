@@ -1,3 +1,3 @@
 from core.threadpool import threadpool
 tpool=threadpool.getThreadPool()
-print str(tpool)
+print(str(tpool))

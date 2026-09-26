@@ -212,7 +212,7 @@ class ANSI (term):
                 self.state.process(c)
                 sys.stdout.write (c)
                 sys.stdout.flush()
-        print str(self)
+        print(str(self))
 
 
     def write (self, ch):

@@ -62,7 +62,7 @@ class fa(Language):
                 list+=["1000000&"]+self.sayNumberCreateList(rest)
 
         elif number >=1000: #thousands
-            thousands=number/1000
+            thousands=number//1000
             rest=number%1000
             list+=self.sayNumberCreateList(thousands)
             if rest==0:
@@ -71,7 +71,7 @@ class fa(Language):
                 list+=["1000&"]+self.sayNumberCreateList(rest)
         
         elif number >=100: #hundred
-            hundreds=number/100
+            hundreds=number//100
             rest=number%100
             
             if hundreds in [2,3,5]:
@@ -91,7 +91,7 @@ class fa(Language):
                 list+=self.sayNumberCreateList(rest)
         
         elif number >=20: 
-            tenth=number/10
+            tenth=number//10
             rest=number%10
             if rest==0:
                 list+=[str(tenth*10)]
@@ -113,9 +113,9 @@ class fa(Language):
             WARNING: both "hour" and "hours" sound files should exists even if they are same
         """
         time_seconds=int(time_seconds)
-        hours=time_seconds/3600
+        hours=time_seconds//3600
         rest=time_seconds%3600
-        minutes=rest/60
+        minutes=rest//60
         seconds=rest%60
         
         list=[]
