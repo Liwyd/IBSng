@@ -16,23 +16,10 @@ def isValidName(name):
     return len(name) != 0 and re.search("[^a-zA-Z0-9_\-]",name)==None 
 
 ###############################
-escape_tags=re.compile("<(?!br( /){0,1}>)(.*?)>")
-
-def escapeStr(_str):
-    if type(_str) == types.UnicodeType:
-        pass
-    else:
-        _str=str(_str)
-    return escapeSlashes(escapeTags(_str))
-
-def escapeSlashes(_str):
-    return _str.replace("'","''").replace("\\","\\\\")
-
-def escapeTags(_str):
-    return escape_tags.sub(r" - \2 - ",_str)
-
-def dbText(text):
-    return "'%s'"%escapeStr(text)
+# SQL text escaping lives in core.lib.sql_escape (shared with defs2sql).
+# Re-exported here so the long-standing `from core.lib.general import *`
+# consumers keep working unchanged.
+from core.lib.sql_escape import escape_tags, escapeStr, escapeSlashes, escapeTags, dbText
 
 ###############################
 def dbNull(var):
