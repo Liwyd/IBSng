@@ -6,9 +6,9 @@ require_once ("user_audit_logs_report_creator.php");
 
 class UserAuditLogsReportGeneratorController extends ReportGeneratorController
 {
-	function UserAuditLogsReportGeneratorController()
+	function __construct()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 
 		$this->total_rows = 0;
 	}

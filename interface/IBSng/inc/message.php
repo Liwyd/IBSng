@@ -3,26 +3,26 @@ require_once("init.php");
 
 class PostMessageToUser extends Request
 {
-    function PostMessageToUser($user_ids, $message)
+    function __construct($user_ids, $message)
     {
-        parent::Request("message.postMessageToUser",array("user_ids"=>$user_ids,
+        parent::__construct("message.postMessageToUser",array("user_ids"=>$user_ids,
                                                           "message"=>$message));
     }
 }
 
 class PostMessageToAdmin extends Request
 {
-    function PostMessageToAdmin($message)
+    function __construct($message)
     {
-        parent::Request("message.postMessageToAdmin",array("message"=>$message));
+        parent::__construct("message.postMessageToAdmin",array("message"=>$message));
     }
 }
 
 class GetAdminMessages extends Request
 {
-    function GetAdminMessages($conds, $from, $to, $sort_by, $desc)
+    function __construct($conds, $from, $to, $sort_by, $desc)
     {
-        parent::Request("message.getAdminMessages",array("conds"=>$conds,
+        parent::__construct("message.getAdminMessages",array("conds"=>$conds,
                                                          "from"=>$from,
                                                          "to"=>$to,
                                                          "sort_by"=>$sort_by,
@@ -32,9 +32,9 @@ class GetAdminMessages extends Request
 
 class GetUserMessages extends Request
 {
-    function GetUserMessages($conds, $from, $to, $sort_by, $desc)
+    function __construct($conds, $from, $to, $sort_by, $desc)
     {
-        parent::Request("message.getUserMessages",array("conds"=>$conds,
+        parent::__construct("message.getUserMessages",array("conds"=>$conds,
                                                          "from"=>$from,
                                                          "to"=>$to,
                                                          "sort_by"=>$sort_by,
@@ -44,17 +44,17 @@ class GetUserMessages extends Request
 
 class DeleteUserMessages extends Request
 {
-    function DeleteUserMessages($message_ids)
+    function __construct($message_ids)
     {
-        parent::Request("message.deleteUserMessages",array("message_ids"=>$message_ids));
+        parent::__construct("message.deleteUserMessages",array("message_ids"=>$message_ids));
     }
 }
 
 class DeleteAdminMessages extends Request
 {
-    function DeleteAdminMessages($message_ids, $table)
+    function __construct($message_ids, $table)
     {
-        parent::Request("message.deleteMessages",array("message_ids"=>$message_ids,
+        parent::__construct("message.deleteMessages",array("message_ids"=>$message_ids,
                                                             "table"=>$table
                                                             ));
     }
@@ -62,9 +62,9 @@ class DeleteAdminMessages extends Request
 
 class GetUserLastMessageID extends Request
 {
-    function GetUserLastMessageID()
+    function __construct()
     {
-        parent::Request("message.getLastMessageID",array());
+        parent::__construct("message.getLastMessageID",array());
     }
 }
 

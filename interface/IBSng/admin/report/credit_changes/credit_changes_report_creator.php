@@ -11,9 +11,9 @@ require_once (IBSINC."generator/report_generator/report_creator.php");
 
 class CreditChangeReportCreator extends ReportCreator
 {
-	function CreditChangeReportCreator()
+	function __construct()
 	{
-		parent :: ReportCreator();
+		parent::__construct();
 	}
 
 	/**

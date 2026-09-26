@@ -3,12 +3,12 @@ require_once("init.php");
 
 class AddNewAdmin extends Request
 {
-    function AddNewAdmin($username,$password1,$password2,$name,$comment)
+    function __construct($username,$password1,$password2,$name,$comment)
     {
         $this->password1=$password1;
         $this->password2=$password2;
 
-        parent::Request("admin.addNewAdmin",array("username"=>$username,
+        parent::__construct("admin.addNewAdmin",array("username"=>$username,
                                                   "password"=>$password1,
                                                   "name"=>$name,
                                                   "comment"=>$comment
@@ -25,17 +25,17 @@ class AddNewAdmin extends Request
 
 class GetAdminInfo extends Request
 {
-    function GetAdminInfo($admin_username)
+    function __construct($admin_username)
     {
-        parent::Request("admin.getAdminInfo",array("admin_username"=>$admin_username));
+        parent::__construct("admin.getAdminInfo",array("admin_username"=>$admin_username));
     }
 }
 
 class GetAllAdminUsernames extends Request
 {
-    function GetAllAdminUsernames()
+    function __construct()
     {
-        parent::Request("admin.getAllAdminUsernames",array());
+        parent::__construct("admin.getAllAdminUsernames",array());
     }
 }
 
@@ -60,12 +60,12 @@ function getAllAdminInfos()
 
 class AdminChangePassword extends Request
 {
-    function AdminChangePassword($username,$password1,$password2)
+    function __construct($username,$password1,$password2)
     {
         $this->password1=$password1;
         $this->password2=$password2;
 
-        parent::Request("admin.changePassword",array("admin_username"=>$username,
+        parent::__construct("admin.changePassword",array("admin_username"=>$username,
                                                      "new_password"=>$password1
                                                     )
                         );
@@ -80,21 +80,21 @@ class AdminChangePassword extends Request
 
 class UpdateAdminInfo extends Request
 {
-    function UpdateAdminInfo($admin_username,$name,$comment)
+    function __construct($admin_username,$name,$comment)
     {
         $params_arr=array("admin_username"=>$admin_username,
                           "name"=>$name,
                           "comment"=>removeCR($comment)
                          );
-        parent::Request("admin.updateAdminInfo",$params_arr);
+        parent::__construct("admin.updateAdminInfo",$params_arr);
     }
 }
 
 class ChangeDeposit extends Request
 {
-    function ChangeDeposit($admin_username,$deposit_change,$comment)
+    function __construct($admin_username,$deposit_change,$comment)
     {
-        parent::Request("admin.changeDeposit",array("admin_username"=>$admin_username,
+        parent::__construct("admin.changeDeposit",array("admin_username"=>$admin_username,
                                                       "deposit_change"=>$deposit_change,
                                                       "comment"=>$comment
                                                       ));
@@ -103,26 +103,26 @@ class ChangeDeposit extends Request
 
 class DeleteAdmin extends Request
 {
-    function DeleteAdmin($admin_username)
+    function __construct($admin_username)
     {
-        parent::Request("admin.deleteAdmin",array("admin_username"=>$admin_username));
+        parent::__construct("admin.deleteAdmin",array("admin_username"=>$admin_username));
     }
 }
 
 class LockAdmin extends Request
 {
-    function LockAdmin($admin_username,$reason)
+    function __construct($admin_username,$reason)
     {
-        parent::Request("admin.lockAdmin",array("admin_username"=>$admin_username,
+        parent::__construct("admin.lockAdmin",array("admin_username"=>$admin_username,
                                                 "reason"=>$reason));
     }
 }
 
 class UnlockAdmin extends Request
 {
-    function UnlockAdmin($admin_username,$lock_id)
+    function __construct($admin_username,$lock_id)
     {
-        parent::Request("admin.unlockAdmin",array("admin_username"=>$admin_username,
+        parent::__construct("admin.unlockAdmin",array("admin_username"=>$admin_username,
                                                   "lock_id"=>$lock_id));
     }
 }

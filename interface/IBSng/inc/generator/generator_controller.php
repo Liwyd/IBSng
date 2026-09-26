@@ -7,7 +7,7 @@
 
 class GeneratorController
 	{
-    function GeneratorController()
+    function __construct()
     {
         $this->init();
         $this->smarty = new IBSSmarty();
@@ -73,7 +73,7 @@ class GeneratorController
 
 		// searching in REQUEST and find selectors each selector start with $selector_start
 		foreach ($_REQUEST as $field_name => $field_formula)
-			if (ereg("^" . $begin_expression . ".*", $field_formula))
+			if (preg_match('#^' . $begin_expression . '.*#', $field_formula))
 				$selectors[str_replace( array_keys($search_replace),
 						  	array_values($search_replace),
 						  	$field_name)] = $field_formula;

@@ -7,7 +7,7 @@ class SearchUserReportGeneratorController extends ReportGeneratorController
 {
 	function UserConnectionLogsReportGeneratorController()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 	}
 
 	function init()

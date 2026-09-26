@@ -6,9 +6,9 @@ require_once ("connection_usages_report_creator.php");
 
 class ConnectionUsageReportGeneratorController extends ReportGeneratorController
 {
-	function ConnectionUsageReportGeneratorController()
+	function __construct()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 
 		$this->total_rows = 0;
 	}

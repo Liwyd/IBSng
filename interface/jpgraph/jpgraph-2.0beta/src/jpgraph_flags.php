@@ -265,7 +265,7 @@ class FlagImages {
     private $iFlagData ;
     private $iOrdIdx=array();
 
-    function FlagImages($aSize=FLAGSIZE1) {
+    function __construct($aSize=FLAGSIZE1) {
         switch($aSize) {
             case FLAGSIZE1 :
             case FLAGSIZE2 :
@@ -309,7 +309,7 @@ class FlagImages {
             reset($this->iCountryNameMap);
             $this->iOrdIdx=array();
             $i=0;
-            while( list($key,$val) = each($this->iCountryNameMap) ) {
+            foreach( $this->iCountryNameMap as $key => $val ) {
                 $this->iOrdIdx[$i++] = array($val,$key);
             }
             $tmp=$this->iOrdIdx[$aOrd];
@@ -339,7 +339,7 @@ class FlagImages {
         $nlen = strlen($aName);
         reset($this->iCountryNameMap);
         // Start by trying to match exact index name
-        while( list($key,$val) = each($this->iCountryNameMap) ) {
+        foreach( $this->iCountryNameMap as $key => $val ) {
             if( $nlen == strlen($val) && $val == $aName )  {
                 $found=true;
                 break;
@@ -348,7 +348,7 @@ class FlagImages {
         if( !$found ) {
             reset($this->iCountryNameMap);
             // If the exact index doesn't work try a (partial) full name
-            while( list($key,$val) = each($this->iCountryNameMap) ) {
+            foreach( $this->iCountryNameMap as $key => $val ) {
                 if( strpos(strtolower($key), $aName) !== false ) {
                     $found=true;
                     break;

@@ -7,9 +7,9 @@ require_once ("admin_connection_logs_report_creator.php");
 
 class AdminConnectionLogsReportGeneratorController extends ConnectionLogsReportGeneratorController
 {
-    function AdminConnectionLogsReportGeneratorController()
+    function __construct()
 	{
-		parent :: ConnectionLogsReportGeneratorController();
+		parent::__construct();
 	
         $this->total_rows = 0;
         $this->total_credit = 0;

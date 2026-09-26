@@ -5,9 +5,9 @@ require_once ("connection_logs_web_report_generator.php");
 
 class ConnectionLogsReportGeneratorController extends ReportGeneratorController
 {
-    function ConnectionLogsReportGeneratorController()
+    function __construct()
     {
-        parent :: ReportGeneratorController();
+        parent::__construct();
     }
 
     function init()

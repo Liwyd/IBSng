@@ -2,9 +2,9 @@
 
 class MultiStrGetAll extends Request
 {
-    function MultiStrGetAll($str,$left_pad)
+    function __construct($str,$left_pad)
     {
-        parent::Request("util.multiStrGetAll",array("str"=>$str,
+        parent::__construct("util.multiStrGetAll",array("str"=>$str,
                                                     "left_pad"=>$left_pad));
     }
 }

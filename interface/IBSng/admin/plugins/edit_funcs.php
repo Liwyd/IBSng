@@ -24,7 +24,7 @@ function intEditGroup(&$smarty,$group_name)
     if(sizeof($edit_templates)==0)
         redirectToGroupInfo($group_name);
     array_map("checkTplFileName",$edit_templates);
-    $edit_template_files=array_map(create_function('$tpl_name','return "plugins/group/edit/".$tpl_name.".tpl";'),$edit_templates);
+    $edit_template_files=array_map(function($tpl_name){ return "plugins/group/edit/".$tpl_name.".tpl"; },$edit_templates);
     editGroupAssignValues($smarty,$group_name,$edit_templates,$edit_template_files);
     showEditGroupInterface($smarty);
 }
@@ -52,7 +52,7 @@ function intEditUser(&$smarty,$user_id)
     if(sizeof($edit_templates)==0)
         redirectToUserInfo($user_id);
     array_map("checkTplFileName",$edit_templates);
-    $edit_template_files=array_map(create_function('$tpl_name','return "plugins/user/edit/".$tpl_name.".tpl";'),$edit_templates);
+    $edit_template_files=array_map(function($tpl_name){ return "plugins/user/edit/".$tpl_name.".tpl"; },$edit_templates);
 
     editUserAssignValues($smarty,$user_id,$edit_templates,$edit_template_files);
     showEditUserInterface($smarty);

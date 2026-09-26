@@ -49,7 +49,7 @@ function test()
 
 class IBSGraph
 {
-    function IBSGraph(&$dates, &$values, $scale=null)
+    function __construct(&$dates, &$values, $scale=null)
     {
         assert(sizeof($dates) == sizeof($values));
         
@@ -121,20 +121,20 @@ class IBSGraph
         {
             case "minute":
             case "hour":
-                return strftime("%H:%M",(int)$date);
+                return date("H:i",(int)$date);
                 break;
 
             case "day":
             case "week":
-                return strftime("%d %H:%M",(int)$date);
+                return date("d H:i",(int)$date);
                 break;
 
             case "month":
-                return strftime("%m/%d",(int)$date);
+                return date("m/d",(int)$date);
                 break;
 
             case "year":
-                return strftime("%y/%m/%d",(int)$date);
+                return date("y/m/d",(int)$date);
                 break;
 
             default:
@@ -358,7 +358,7 @@ class IBSGraph
 
 class IBSBWGraph extends IBSGraph
 {
-    function setTitles($title, $legend1, $legend2, $xtitle, $ytitle)
+    function setTitles($title, $legend1, $legend2, $xtitle, $ytitle = null)
     {
         $this->title = $title;
         $this->legend1 = $legend1;
@@ -368,7 +368,7 @@ class IBSBWGraph extends IBSGraph
     }
 
 
-    function createGraph($add_text_values = TRUE)
+    function createGraph($add_text_values = TRUE, $pad_dates=TRUE)
     {/*Create graph using defaults,
         if $add_text_values is true, add current min max and average value to graph*/
 
@@ -417,7 +417,7 @@ class IBSBWGraph extends IBSGraph
         return array($in_vals, $out_vals);
     }
 
-    function createLinePlot(&$values,$color, $legend,$fill=FALSE)
+    function createLinePlot(&$values,$color=NULL, $legend=NULL,$fill=FALSE)
     {
         $p = new LinePlot($values);
         $p->SetColor($color);
@@ -431,7 +431,7 @@ class IBSBWGraph extends IBSGraph
 
 
     ///////////////////////////////////////////////
-    function addTextValues(&$graph,&$in_vals,&$out_vals)
+    function addTextValues(&$graph,&$in_vals=NULL,&$out_vals=NULL)
     {/*
         add cur max min and average texts to graph
     */
@@ -450,7 +450,7 @@ class IBSBWGraph extends IBSGraph
         $this->addStatisticalValuesToGraph($graph,$cur_in,$cur_out,$min_in,$min_out,$max_in,$max_out,$avg_in,$avg_out);
     }
 
-    function addStatisticalValuesToGraph(&$graph,$cur_in,$cur_out,$min_in,$min_out,$max_in,$max_out,$avg_in,$avg_out)
+    function addStatisticalValuesToGraph(&$graph,$cur_in,$cur_out,$min_in,$min_out=NULL,$max_in=NULL,$max_out=NULL,$avg_in=NULL,$avg_out=NULL)
     {
         $txt=new Text("Unit: kb/s\n\nCur In: {$cur_in}\nCur Out: {$cur_out}\n\nMin In: {$min_in}\nMin Out: {$min_out}\n\nMax In: {$max_in}\nMax Out: {$max_out}\n\nAvg In: {$avg_in}\nAvg Out: {$avg_out}\n\nScale: ".ucwords($this->scale));
         $txt->SetPos(625,180,"left","left");
@@ -466,7 +466,7 @@ class IBSBWGraph extends IBSGraph
 
 class IBSPieGraph
 {
-    function IBSPieGraph($title, &$legends, &$labels,&$datas)
+    function __construct($title, &$legends, &$labels,&$datas)
     {
         $this->title=$title;
         $this->legends=$legends;

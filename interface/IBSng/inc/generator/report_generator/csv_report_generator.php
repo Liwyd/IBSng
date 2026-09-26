@@ -10,10 +10,10 @@ class CSVReportGenerator extends ReportGenerator
 	/**
 	 * @access public
 	 */
-	function CSVReportGenerator($csv)
+	function __construct($csv)
 	{
         $this->csv = $csv;
-		parent :: ReportGenerator();
+		parent::__construct();
 	}
 
 	function init()
@@ -25,7 +25,7 @@ class CSVReportGenerator extends ReportGenerator
 	function registerController (& $controller)
 	{
 	    parent :: registerController ($controller);
-	    $this->csv = &new OutputCSVGenerator($this->csv, $this->controller->output_filename.".csv");
+	    $this->csv = new OutputCSVGenerator($this->csv, $this->controller->output_filename.".csv");
 	    $this->doArray(array($this->controller->creator->getRegisteredValue("root_node_name") =>
 	    	array_keys($this->controller->getReportSelectors())));
 	}

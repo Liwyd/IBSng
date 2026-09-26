@@ -8,9 +8,9 @@ require_once (IBSINC."generator/report_generator/xml_report_generator.php");
 
 class ReportGeneratorController extends GeneratorController
 {
-	function ReportGeneratorController()
+	function __construct()
 	{
-		parent :: GeneratorController ();
+		parent::__construct();
 	}
 
 	function init()

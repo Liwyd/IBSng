@@ -2,7 +2,7 @@
 
 class ReportHelper
 {
-    function ReportHelper($default_from=0,$default_to=30,$default_order_by="",$default_desc=TRUE)
+    function __construct($default_from=0,$default_to=30,$default_order_by="",$default_desc=TRUE)
     {
         $this->default_from=$default_from;
         $this->default_to=$default_to;
@@ -91,7 +91,7 @@ class ReportHelper
 
 class ReportCollector
 {
-    function ReportCollector($unset_from_request=FALSE)
+    function __construct($unset_from_request=FALSE)
     {/*
         $unset_from_request: Delete Condition that has been collected from request.
                     This is essential for situations where request keys would cause conflict in next page

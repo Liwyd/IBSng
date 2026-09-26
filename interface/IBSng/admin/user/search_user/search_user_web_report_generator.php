@@ -11,8 +11,8 @@ require_once (IBSINC . "generator/report_generator/web_report_generator.php");
  * */
 
 class SearchUserWebReportGenerator extends WebReportGenerator {
-    function SearchUserWebReportGenerator() {
-        parent :: WebReportGenerator();
+    function __construct() {
+        parent::__construct();
     }
 
     function init() {

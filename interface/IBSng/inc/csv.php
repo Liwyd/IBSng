@@ -14,7 +14,7 @@ function getSeparatorChar($separator)
 
 class CSVGenerator
 {
-    function CSVGenerator($separator=",",$buffer=False)
+    function __construct($separator=",",$buffer=False)
     {/*
         $seperator can be ",", ";","\t","TAB", or else it will be set as ","
         if $buffer is true, all lines are buffered instead of print
@@ -57,7 +57,7 @@ class CSVGenerator
 
 class CSVParser
 {
-    function CSVParser($separator=",")
+    function __construct($separator=",")
     {
         $this->contents="";
         $this->separator=getSeparatorChar($separator);

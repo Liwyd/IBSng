@@ -10,8 +10,8 @@ require_once (IBSINC . "generator/report_generator/report_creator.php");
 require_once ("connection_logs_report_generator_controller.php");
 
 class ConnectionLogsReportCreator extends ReportCreator {
-	function ConnectionLogsReportCreator() {
-		parent :: ReportCreator();
+	function __construct() {
+		parent::__construct();
 	}
 
 	function init() {
@@ -39,7 +39,7 @@ class ConnectionLogsReportCreator extends ReportCreator {
 	 * */
 	function getFieldValue($row_report, $attribute_name) {
 		$ret = "-";
-		if (ereg("^show__details_.*", $attribute_name)) {
+		if (preg_match('#^show__details_.*#',  $attribute_name)) {
 			if ($attribute_name == "show__details_any_username")
 				$attribute_names = array (
 					"username",
@@ -59,7 +59,7 @@ class ConnectionLogsReportCreator extends ReportCreator {
 				}
 			}
 		} else {
-			if (ereg("^show__.*", $attribute_name)) {
+			if (preg_match('#^show__.*#',  $attribute_name)) {
 				$attribute_name = str_replace("show__", "", $attribute_name);
 				if (isset ($row_report[$attribute_name]))
 					$ret = $row_report[$attribute_name];

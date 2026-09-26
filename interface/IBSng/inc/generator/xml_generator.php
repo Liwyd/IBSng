@@ -5,12 +5,12 @@ require_once (IBSINC."generator/generator.php");
 
 /**
  */
-class XmlGenerator extends Generator
+class XmlGenerator extends IBSGenerator
 {
 	/**
 	 * @access public
 	 */
-	function XmlGenerator($root, $element)
+	function __construct($root, $element)
 	{
 		$this->root = $root;
 		$this->element = $element;

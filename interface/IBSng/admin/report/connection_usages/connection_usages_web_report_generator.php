@@ -5,8 +5,8 @@ require_once (IBSINC . "report.php");
 require_once (IBSINC . "generator/report_generator/web_report_generator.php");
 
 class ConnectionUsageWebReportGenerator extends WebReportGenerator {
-    function ConnectionUsageWebReportGenerator() {
-        parent :: WebReportGenerator();
+    function __construct() {
+        parent::__construct();
     }
 
     function init() {

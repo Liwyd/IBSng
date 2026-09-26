@@ -5,8 +5,8 @@ require_once (IBSINC . "report.php");
 require_once (IBSINC . "generator/report_generator/web_report_generator.php");
 
 class WebAnalyzerLogsWebReportGenerator extends WebReportGenerator {
-    function WebAnalyzerLogsWebReportGenerator() {
-        parent :: WebReportGenerator();
+    function __construct() {
+        parent::__construct();
     }
 
     function init() {

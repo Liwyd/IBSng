@@ -12,9 +12,9 @@ require_once (IBSINC."generator/report_generator/report_creator.php");
 
 class AdminDepositChangeLogsReportCreator extends ReportCreator
 {
-	function AdminDepositChangeLogsReportCreator()
+	function __construct()
 	{
-		parent :: ReportCreator();
+		parent::__construct();
 	}
 
 	function init()

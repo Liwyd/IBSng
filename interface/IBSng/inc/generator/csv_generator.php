@@ -6,12 +6,12 @@ require_once (IBSINC."generator/header_generator.php");
 /**
  * used to crate CSV output
  */
-class OutputCSVGenerator extends Generator
+class OutputCSVGenerator extends IBSGenerator
 {
 	/**
 	 * @access public
 	 */
-	function OutputCSVGenerator($csv, $file_name)
+	function __construct($csv, $file_name)
 	{
 		HeaderGenerator :: assignHeader("TEXT", $file_name);
 		$this->csv = new CSVGenerator($csv);

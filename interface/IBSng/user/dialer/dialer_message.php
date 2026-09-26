@@ -48,7 +48,7 @@ function intPostMessage($message_text)
 }
 
 function unicode_decode($txt) {
-  return ereg_replace('%u0([[:alnum:]]{3})', '&#x\1;',$txt);
+  return preg_replace('#%u0([[:alnum:]]{3})#',  '&#x\1;',$txt);
 }
 //////////////////////////////////////
 

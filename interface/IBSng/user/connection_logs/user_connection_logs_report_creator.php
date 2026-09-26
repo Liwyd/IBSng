@@ -12,9 +12,9 @@ require_once ("user_connection_logs_report_generator_controller.php");
 
 class UserConnectionLogsReportCreator extends ConnectionLogsReportCreator
 {
-	function UserConnectionLogsReportCreator()
+	function __construct()
 	{
-		parent :: ConnectionLogsReportCreator();
+		parent::__construct();
 	}
 
 	function collectConditions()

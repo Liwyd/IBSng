@@ -24,7 +24,7 @@ class PiePlot3D extends PiePlot {
         
 //---------------
 // CONSTRUCTOR
-    function PiePlot3d($data) {
+    function __construct($data) {
         $this->radius = 0.5;
         $this->data = $data;
         $this->title = new Text("");
@@ -47,7 +47,7 @@ class PiePlot3D extends PiePlot {
     }
 
     function Legend($aGraph) {
-        parent::Legend($aGraph);
+        parent::__construct($aGraph);
         $aGraph->legend->txtcol = array_reverse($aGraph->legend->txtcol);
     }
 

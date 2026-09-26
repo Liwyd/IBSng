@@ -6,9 +6,9 @@ require_once ("web_analyzer_logs_report_creator.php");
 
 class WebAnalyzerLogsReportGeneratorController extends ReportGeneratorController
 {
-	function WebAnalyzerLogsReportGeneratorController()
+	function __construct()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 
 		$this->total_miss = 0;
 	    $this->total_rows = 0;
@@ -55,8 +55,8 @@ class WebAnalyzerLogsReportGeneratorController extends ReportGeneratorController
 	    	foreach ($selectors as $selector => $smarty_output)
 	    		if (strchr($selector, " / ")) {
 	    	    	unset($selectors[$selector]);
-	    	    	$keys = split(" / ", $selector);
-	    	    	$values = split(",show__slash,", $smarty_output);
+	    	    	$keys = preg_split('# / #',  $selector);
+	    	    	$values = preg_split('#,show__slash,#',  $smarty_output);
 
 	    	    	for ($i = 0; $i < count($keys); $i ++)
 	    	    		$selectors[$keys[$i]] = $values[$i];

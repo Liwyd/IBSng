@@ -8,7 +8,7 @@
 require_once (IBSINC . "generator/creator.php");
 
 class ReportCreator extends Creator {
-	function ReportCreator() {
+	function __construct() {
 		// initilized variables
 		$this->init();
 	}

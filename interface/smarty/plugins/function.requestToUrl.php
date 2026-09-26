@@ -8,7 +8,7 @@ function smarty_function_requestToUrl($params,&$smarty)
 */
     $ignore_arr=array();
     if(isset($params["ignore"]))
-        $ignore_arr=split($params["ignore"],",");
+        $ignore_arr=explode(",",$params["ignore"]);
     return $_SERVER["PHP_SELF"]."?".convertRequestToUrl($ignore_arr);
 }
 

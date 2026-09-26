@@ -2,9 +2,9 @@
 
 require_once (IBSINC."generator/generator.php");
 
-class ReportGenerator extends Generator
+class ReportGenerator extends IBSGenerator
 {
-	function ReportGenerator()
+	function __construct()
 	{
 		$this->init();
 		$this->controller = NULL;

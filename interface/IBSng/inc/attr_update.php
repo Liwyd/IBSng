@@ -29,7 +29,7 @@ function getUpdateMethodsArray()
 
 class BaseUpdateAttrsHelper
 {
-    function BaseUpdateAttrsHelper()
+    function __construct()
     {
         $this->to_update_attrs=array();
         $this->to_del_attrs=array();
@@ -79,9 +79,9 @@ class BaseUpdateAttrsHelper
 
 class UpdateAttrsHelper extends BaseUpdateAttrsHelper
 {       
-    function UpdateAttrsHelper(&$smarty,$target,$target_id)
+    function __construct(&$smarty,$target,$target_id)
     {
-        parent::BaseUpdateAttrsHelper();
+        parent::__construct();
         $this->smarty=&$smarty;
         $this->target=$target;
         $this->target_id=$target_id;

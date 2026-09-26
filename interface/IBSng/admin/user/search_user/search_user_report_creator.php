@@ -12,9 +12,9 @@ require_once (IBSINC."generator/report_generator/report_creator.php");
 
 class SearchUserReportCreator extends ReportCreator
 {
-	function SearchUserReportCreator()
+	function __construct()
 	{
-		parent :: ReportCreator();
+		parent::__construct();
 	}
 
 	function init()
@@ -85,7 +85,7 @@ class SearchUserReportCreator extends ReportCreator
 	{
 		$attr_value = "";
 
-		if (ereg("^show__attrs_.*", $attribute_name))
+		if (preg_match('#^show__attrs_.*#',  $attribute_name))
 		{
 			$attribute_name = str_replace("show__attrs_", "", $attribute_name);
 
@@ -106,7 +106,7 @@ class SearchUserReportCreator extends ReportCreator
 			}
 		}
 		else
-			if (ereg("^show__basic_.*", $attribute_name))
+			if (preg_match('#^show__basic_.*#',  $attribute_name))
 			{
 				$attribute_name = array (str_replace("show__basic_", "", $attribute_name));
 				$attr_value = $this->getValueFromTwoDimArray($user_attrs, "basic_info", $attribute_name[0]);

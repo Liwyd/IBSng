@@ -6,9 +6,9 @@ require_once ("admin_deposit_change_logs_report_creator.php");
 
 class AdminDepositChangeLogsReportGeneratorController extends ReportGeneratorController
 {
-	function AdminDepositChangeLogsReportGeneratorController()
+	function __construct()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 		$this->total_of_rows = 0;
 		$this->total_deposit_change = 0;
 	}

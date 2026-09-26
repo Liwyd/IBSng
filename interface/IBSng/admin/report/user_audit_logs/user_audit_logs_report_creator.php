@@ -13,9 +13,9 @@ require_once (IBSINC."../admin/report/connections_funcs.php");
 
 class UserAuditLogsReportCreator extends ReportCreator
 {
-	function UserAuditLogsReportCreator()
+	function __construct()
 	{
-		parent :: ReportCreator();
+		parent::__construct();
 	}
 
 	/**

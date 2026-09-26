@@ -12,8 +12,8 @@ require_once ("admin_connection_logs_report_generator_controller.php");
 require_once ("connection_logs_report_creator.php");
 
 class AdminConnectionLogsReportCreator extends ConnectionLogsReportCreator {
-	function AdminConnectionLogsReportCreator() {
-		parent :: ConnectionLogsReportCreator();
+	function __construct() {
+		parent::__construct();
 	}
 
 	function collectConditions() {

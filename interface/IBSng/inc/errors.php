@@ -15,7 +15,7 @@ class Error
      key shows what is error about and msg is the error message for this situation
 
   */
-    function Error($err_str)
+    function __construct($err_str)
     {
         $this->raw_err_str=$err_str;
         $this->err_msgs=array();
@@ -26,14 +26,14 @@ class Error
 
     function __splitErrorLines()
     {
-        $err_lines=split("\n",$this->raw_err_str);
+        $err_lines=preg_split('#\n#', $this->raw_err_str);
         foreach($err_lines as $line)
             $this->__splitError($line);
     }
 
     function __splitError($err_str)
     {
-        $err_sp=split("\|",$err_str,2);
+        $err_sp=preg_split('#\|#', $err_str,2);
         if(sizeof($err_sp)==2)
         {
             $this->err_msgs[]=$err_sp[1];

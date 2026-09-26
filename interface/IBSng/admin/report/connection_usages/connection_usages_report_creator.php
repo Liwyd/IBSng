@@ -13,9 +13,9 @@ require_once (IBSINC."../admin/report/connections_funcs.php");
 
 class ConnectionUsageReportCreator extends ReportCreator
 {
-	function ConnectionUsageReportCreator()
+	function __construct()
 	{
-		parent :: ReportCreator();
+		parent::__construct();
 		$this->register("formula_prefixes", array (
 										"show__all_",
 										"show__inout_usages_",

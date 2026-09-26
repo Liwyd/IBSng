@@ -23,7 +23,7 @@ class Spline {
     private $y2;                 // 2:nd derivate of ydata      
     private $n=0;
 
-    function Spline($xdata,$ydata) {
+    function __construct($xdata,$ydata) {
         $this->y2 = array();
         $this->xdata = $xdata;
         $this->ydata = $ydata;

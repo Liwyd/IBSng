@@ -5,7 +5,7 @@
  * 
  * */
  
- class Generator
+ class IBSGenerator
 {
     /**
      * will initialize variables and will call at

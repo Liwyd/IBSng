@@ -3,9 +3,9 @@ require_once("init.php");
 
 class GetStatistics extends Request
 {
-    function GetStatistics()
+    function __construct()
     {
-        parent::Request("stat.getStatistics",array());
+        parent::__construct("stat.getStatistics",array());
     }
 }
 

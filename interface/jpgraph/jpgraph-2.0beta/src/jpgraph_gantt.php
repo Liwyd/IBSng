@@ -150,7 +150,7 @@ class GanttActivityInfo {
     private $iStyle=1;
     private $iHeaderAlign='center';
 
-    function GanttActivityInfo() {
+    function __construct() {
         $this->vgrid = new LineProperty();
     }
 
@@ -339,7 +339,7 @@ class GanttGraph extends Graph {
 //---------------
 // CONSTRUCTOR  
     // Create a new gantt graph
-    function GanttGraph($aWidth=0,$aHeight=0,$aCachedName="",$aTimeOut=0,$aInline=true) {
+    function __construct($aWidth=0,$aHeight=0,$aCachedName="",$aTimeOut=0,$aInline=true) {
 
         // Backward compatibility
         if( $aWidth == -1 ) $aWidth=0;
@@ -348,7 +348,7 @@ class GanttGraph extends Graph {
         if( $aWidth<  0 || $aHeight < 0 ) {
             JpgraphError::Raise("You can't specify negative sizes for Gantt graph dimensions. Use 0 to indicate that you want the library to automatically determine a dimension.");
         }
-        Graph::Graph($aWidth,$aHeight,$aCachedName,$aTimeOut,$aInline);         
+        parent::__construct($aWidth,$aHeight,$aCachedName,$aTimeOut,$aInline);         
         $this->scale = new GanttScale($this->img);
 
         // Default margins
@@ -452,7 +452,7 @@ class GanttGraph extends Graph {
             // Setup caption
             $a->caption->Set($data[$i][$csimpos-1]);
 
-            // Check if this activity should have a CSIM target ?
+            // Check if this activity should have a CSIM targetï¿½?
             if( !empty($data[$i][$csimpos]) ) {
                 $a->SetCSIMTarget($data[$i][$csimpos]);
                 $a->SetCSIMAlt($data[$i][$csimpos+1]);
@@ -1111,7 +1111,7 @@ class PredefIcons {
         return Image::CreateFromString(base64_decode($this->iBuiltinIcon[$aIdx][1]));   
     }
 
-    function PredefIcons() {
+    function __construct() {
         //==========================================================
         // warning.png
         //==========================================================
@@ -1407,7 +1407,7 @@ class IconImage {
     private $ixalign='left',$iyalign='center';
     private $iScale=1.0;
 
-    function IconImage($aIcon,$aScale=1) {
+    function __construct($aIcon,$aScale=1) {
         GLOBAL $_gPredefIcons ; 
         if( is_string($aIcon) ) {
             $this->iGDImage = Graph::LoadBkgImage('',$aIcon);
@@ -1477,7 +1477,7 @@ class TextProperty {
         
 //---------------
 // CONSTRUCTOR  
-    function TextProperty($aTxt='') {
+    function __construct($aTxt='') {
         $this->iText = $aTxt;
     }           
         
@@ -1558,7 +1558,7 @@ class TextProperty {
         $aImg->SetFont($this->iFFamily,$this->iFStyle,$this->iFSize);
         if( is_string($this->iText) ) {
             if( strlen($this->iText) == 0 ) return 0;
-            $tmp = split("\t",$this->iText);
+            $tmp = preg_split('#\t#', $this->iText);
             if( count($tmp) <= 1 || !$aUseTabs ) {
                 return $aImg->GetTextWidth($this->iText)+2*$extra_margin;
             }
@@ -1681,7 +1681,7 @@ class TextProperty {
                 }
             }
             else {
-                $tmp = split("\t",$this->iText);
+                $tmp = preg_split('#\t#', $this->iText);
                 $n = min(count($tmp),count($aX));
                 for($i=0; $i < $n; ++$i) {
                     $aImg->StrokeText($aX[$i],$aY,$tmp[$i]);
@@ -1710,7 +1710,7 @@ class HeaderProperty {
 
 //---------------
 // CONSTRUCTOR  
-    function HeaderProperty() {
+    function __construct() {
         $this->grid = new LineProperty();
     }
 
@@ -1826,7 +1826,7 @@ class GanttScale {
         
 //---------------
 // CONSTRUCTOR  
-    function GanttScale($aImg) {
+    function __construct($aImg) {
         $this->iImg = $aImg;            
         $this->iDateLocale = new DateLocale();
 
@@ -2869,7 +2869,7 @@ class GanttConstraint {
 
 //---------------
 // CONSTRUCTOR
-    function GanttConstraint($aRow,$aType,$aColor,$aArrowSize,$aArrowType){
+    function __construct($aRow,$aType,$aColor,$aArrowSize,$aArrowType){
         $this->iConstrainType = $aType;
         $this->iConstrainRow = $aRow;
         $this->iConstrainColor=$aColor;
@@ -2893,7 +2893,7 @@ class GanttPlotObject {
     public $iVPos=0;                                    // Vertical position
     protected $iLabelLeftMargin=2;      // Title margin
                 
-    function GanttPlotObject() {
+    function __construct() {
         $this->title = new TextProperty();
         $this->title->Align("left","center");
         $this->caption = new TextProperty();
@@ -3016,7 +3016,7 @@ class HorizontalGridLine {
     private $line=null;
     private $iStart=0; // 0=from left margin, 1=just along header
 
-    function HorizontalGridLine() {
+    function __construct() {
         $this->line = new LineProperty();
         $this->line->SetColor('gray@0.4');
         $this->line->SetStyle('dashed');
@@ -3098,8 +3098,8 @@ class GanttBar extends GanttPlotObject {
     private $iPattern=GANTT_RDIAG,$iPatternColor="blue",$iPatternDensity=95;
 //---------------
 // CONSTRUCTOR  
-    function GanttBar($aPos,$aLabel,$aStart,$aEnd,$aCaption="",$aHeightFactor=0.6) {
-        parent::GanttPlotObject();      
+    function __construct($aPos,$aLabel,$aStart,$aEnd,$aCaption="",$aHeightFactor=0.6) {
+        parent::__construct();      
         $this->iStart = $aStart;        
         // Is the end date given as a date or as number of days added to start date?
         if( is_string($aEnd) ) {
@@ -3323,8 +3323,8 @@ class MileStone extends GanttPlotObject {
         
 //---------------
 // CONSTRUCTOR  
-    function MileStone($aVPos,$aLabel,$aDate,$aCaption="") {
-        GanttPlotObject::GanttPlotObject();
+    function __construct($aVPos,$aLabel,$aDate,$aCaption="") {
+        parent::__construct();
         $this->caption->Set($aCaption);
         $this->caption->Align("left","center");
         $this->caption->SetFont(FF_FONT1,FS_BOLD);
@@ -3406,7 +3406,7 @@ class MileStone extends GanttPlotObject {
 
 class TextPropertyBelow extends TextProperty {
     function TextPropertyBelow($aTxt='') {
-        parent::TextProperty($aTxt);
+        parent::__construct($aTxt);
     }
 
     function GetColWidth($aImg,$aMargin=0) {
@@ -3422,8 +3422,8 @@ class GanttVLine extends GanttPlotObject {
         
 //---------------
 // CONSTRUCTOR  
-    function GanttVLine($aDate,$aTitle="",$aColor="black",$aWeight=3,$aStyle="dashed") {
-        GanttPlotObject::GanttPlotObject();
+    function __construct($aDate,$aTitle="",$aColor="black",$aWeight=3,$aStyle="dashed") {
+        parent::__construct();
         $this->iLine = new LineProperty();
         $this->iLine->SetColor($aColor);
         $this->iLine->SetWeight($aWeight);
@@ -3472,7 +3472,7 @@ class LinkArrow {
     private $iDirection=ARROW_DOWN,$iType=ARROWT_SOLID,$iSize=ARROW_S2;
     private $iColor='black';
 
-    function LinkArrow($x,$y,$aDirection,$aType=ARROWT_SOLID,$aSize=ARROW_S2) {
+    function __construct($x,$y,$aDirection,$aType=ARROWT_SOLID,$aSize=ARROW_S2) {
         $this->iDirection = $aDirection;
         $this->iType = $aType;
         $this->iSize = $aSize;
@@ -3541,7 +3541,7 @@ class GanttLink {
     private $iColor='black',$iWeight=1;
     private $iArrowSize=ARROW_S2,$iArrowType=ARROWT_SOLID;
 
-    function GanttLink($x1=0,$y1=0,$x2=0,$y2=0) {
+    function __construct($x1=0,$y1=0,$x2=0,$y2=0) {
         $this->ix1 = $x1;
         $this->ix2 = $x2;
         $this->iy1 = $y1;

@@ -14,7 +14,7 @@ class HandDigits {
     public $chars = array();
     public $iHeight=30, $iWidth=30;
 
-    function HandDigits() {
+    function __construct() {
 
 //==========================================================
 // lj-small.jpg
@@ -550,7 +550,7 @@ class AntiSpam {
     private $iData='';
     private $iDD=null;
 
-    function AntiSpam($aData='') {
+    function __construct($aData='') {
         $this->iData = $aData;
         $this->iDD = new HandDigits();  
     }

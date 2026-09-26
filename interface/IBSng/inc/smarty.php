@@ -5,9 +5,9 @@ require_once(SMARTY_DIR."Smarty.class.php");
 
 class IBSSmarty extends Smarty 
 {
-   function IBSSmarty()
+   function __construct()
    {
-        $this->Smarty();
+        parent::__construct();
 
         $this->template_dir = SMARTY_ROOT.'templates/';
         $this->compile_dir = SMARTY_ROOT.'templates_c/';

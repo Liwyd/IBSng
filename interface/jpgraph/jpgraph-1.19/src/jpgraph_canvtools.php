@@ -27,7 +27,7 @@ class CanvasScale {
     var $w,$h;
     var $ixmin=0,$ixmax=10,$iymin=0,$iymax=10;
 
-    function CanvasScale(&$graph,$xmin=0,$xmax=10,$ymin=0,$ymax=10) {
+    function __construct(&$graph,$xmin=0,$xmax=10,$ymin=0,$ymax=10) {
         $this->g = &$graph;
         $this->w = $graph->img->width;
         $this->h = $graph->img->height;
@@ -70,7 +70,7 @@ class CanvasScale {
 class Shape {
     var $img,$scale;
 
-    function Shape(&$aGraph,&$scale) {
+    function __construct(&$aGraph,&$scale) {
         $this->img = &$aGraph->img;
         $this->img->SetColor('black');
         $this->scale = &$scale;

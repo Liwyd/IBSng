@@ -4,9 +4,9 @@ require_once (IBSINC."generator/report_generator/modifiers.php");
 
 class WebReportGenerator extends ReportGenerator
 {
-	function WebReportGenerator()
+	function __construct()
 	{
-		parent :: ReportGenerator();
+		parent::__construct();
 		session_write_close();
 		$this->init();
 	}
@@ -56,7 +56,7 @@ class WebReportGenerator extends ReportGenerator
 
 	function getFieldForBodyTpl($footer_field)
 	{
-		$footer_field = ereg_replace(",[a-zA-Z0-9_]+", "", $footer_field);       
+		$footer_field = preg_replace('#,[a-zA-Z0-9_]+#',  "", $footer_field);       
 		return "{listTD} {{$this->foreach_item}.".$this->controller->creator->getRegisteredValue("root_node_name").".{$footer_field}} {/listTD}\n";
 	}
 

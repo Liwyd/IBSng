@@ -3,18 +3,18 @@ require_once("init.php");
 
 class AdminHasPerm extends Request
 {
-    function AdminHasPerm($perm_name,$admin_username)
+    function __construct($perm_name,$admin_username)
     {
-        parent::Request("perm.hasPerm",array("perm_name"=>$perm_name,
+        parent::__construct("perm.hasPerm",array("perm_name"=>$perm_name,
                                              "admin_username"=>$admin_username));
     }
 }
 
 class AdminCanDo extends Request
 {
-    function AdminCanDo($perm_name,$admin_username,$params)
+    function __construct($perm_name,$admin_username,$params)
     {
-        parent::Request("perm.canDo",array("perm_name"=>$perm_name,
+        parent::__construct("perm.canDo",array("perm_name"=>$perm_name,
                                            "admin_username"=>$admin_username,
                                            "params"=>$params));
     }
@@ -23,9 +23,9 @@ class AdminCanDo extends Request
 
 class AdminPermValue extends Request
 {
-    function AdminPermValue($perm_name,$admin_username)
+    function __construct($perm_name,$admin_username)
     {
-        parent::Request("perm.getAdminPermVal",array("perm_name"=>$perm_name,"admin_username"=>$admin_username));
+        parent::__construct("perm.getAdminPermVal",array("perm_name"=>$perm_name,"admin_username"=>$admin_username));
     }
 }
 
@@ -80,25 +80,25 @@ function amIGod()
 
 class GetPermsOfAdmin extends Request
 {
-    function GetPermsOfAdmin($admin_username)
+    function __construct($admin_username)
     {
-        parent::Request("perm.getPermsOfAdmin",array("admin_username"=>$admin_username));
+        parent::__construct("perm.getPermsOfAdmin",array("admin_username"=>$admin_username));
     }
 }
 
 class GetAllPerms extends Request
 {
-    function GetAllPerms($category)
+    function __construct($category)
     {
-        parent::Request("perm.getAllPerms",array("category"=>$category));
+        parent::__construct("perm.getAllPerms",array("category"=>$category));
     }
 }
 
 class ChangePermission extends Request
 {
-    function ChangePermission($admin_username,$perm_name,$perm_value)
+    function __construct($admin_username,$perm_name,$perm_value)
     {
-        parent::Request("perm.changePermission",array("admin_username"=>$admin_username,
+        parent::__construct("perm.changePermission",array("admin_username"=>$admin_username,
                                                       "perm_name"=>$perm_name,
                                                       "perm_value"=>$perm_value));
     }
@@ -107,18 +107,18 @@ class ChangePermission extends Request
 
 class DeletePermission extends Request
 {
-    function DeletePermission($admin_username,$perm_name)
+    function __construct($admin_username,$perm_name)
     {
-        parent::Request("perm.delPermission",array("admin_username"=>$admin_username,
+        parent::__construct("perm.delPermission",array("admin_username"=>$admin_username,
                                                       "perm_name"=>$perm_name));
     }
 }
 
 class DeletePermissionValue extends Request
 {
-    function DeletePermissionValue($admin_username,$perm_name,$perm_value)
+    function __construct($admin_username,$perm_name,$perm_value)
     {
-        parent::Request("perm.delPermissionValue",array("admin_username"=>$admin_username,
+        parent::__construct("perm.delPermissionValue",array("admin_username"=>$admin_username,
                                                       "perm_name"=>$perm_name,
                                                       "perm_value"=>$perm_value));
     }
@@ -126,43 +126,43 @@ class DeletePermissionValue extends Request
 
 class SavePermsOfAdminToTemplate extends Request
 {
-    function SavePermsOfAdminToTemplate($admin_username,$template_name)
+    function __construct($admin_username,$template_name)
     {
-        parent::Request("perm.savePermsOfAdminToTemplate",array("admin_username"=>$admin_username,
+        parent::__construct("perm.savePermsOfAdminToTemplate",array("admin_username"=>$admin_username,
                                                                 "perm_template_name"=>$template_name));
     }
 }
 
 class GetListOfPermTemplates extends Request
 {
-    function GetListOfPermTemplates()
+    function __construct()
     {
-        parent::Request("perm.getListOfPermTemplates",array());
+        parent::__construct("perm.getListOfPermTemplates",array());
     }
 }
 
 class GetPermsOfTemplate extends Request
 {
-    function GetPermsOfTemplate($template_name)
+    function __construct($template_name)
     {
-        parent::Request("perm.getPermsOfTemplate",array("perm_template_name"=>$template_name));
+        parent::__construct("perm.getPermsOfTemplate",array("perm_template_name"=>$template_name));
     }
 }
 
 class LoadPermTemplateToAdmin extends Request
 {
-    function LoadPermTemplateToAdmin($admin_username,$template_name)
+    function __construct($admin_username,$template_name)
     {
-        parent::Request("perm.loadPermTemplateToAdmin",array("admin_username"=>$admin_username,
+        parent::__construct("perm.loadPermTemplateToAdmin",array("admin_username"=>$admin_username,
                                                              "perm_template_name"=>$template_name));
     }
 }
 
 class DeletePermTemplate extends Request
 {
-    function DeletePermTemplate($template_name)
+    function __construct($template_name)
     {
-        parent::Request("perm.deletePermTemplate",array("perm_template_name"=>$template_name));
+        parent::__construct("perm.deletePermTemplate",array("perm_template_name"=>$template_name));
     }
 }
 

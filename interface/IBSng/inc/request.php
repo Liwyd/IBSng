@@ -5,10 +5,10 @@ require_once(IBSINC."auth.php");
 
 class Request
 { /* This is class for all requests
-     other requests may inherit from this class but don't forget to call parent::Request() in constructor
+     other requests may inherit from this class but don't forget to call parent::__construct() in constructor
   */
 
-    function Request($server_method,$params_arr)
+    function __construct($server_method,$params_arr)
     {
         $this->server_method=$server_method;
         $this->__addAuthParams($params_arr);
@@ -87,7 +87,7 @@ class Request
 
 class Response
 {
-    function Response($success,$ret_val)
+    function __construct($success,$ret_val)
     {
         $this->result=null;
         $this->error=null;

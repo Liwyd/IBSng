@@ -13,9 +13,9 @@ class XmlReportGenerator extends ReportGenerator
 	/**
 	 * @access public
 	 */
-	function XmlReportGenerator()
+	function __construct()
 	{
-        parent :: ReportGenerator ();
+        parent::__construct();
 	}
 	
 	function registerController (& $controller)

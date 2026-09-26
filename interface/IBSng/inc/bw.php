@@ -3,18 +3,18 @@ require_once("init.php");
 
 class AddInterface extends Request
 {
-    function AddInterface($interface_name,$comment)
+    function __construct($interface_name,$comment)
     {
-        parent::Request("bw.addInterface",array("interface_name"=>$interface_name,
+        parent::__construct("bw.addInterface",array("interface_name"=>$interface_name,
                                                     "comment"=>$comment));
     }
 }
 
 class AddNode extends Request
 {
-    function AddNode($interface_name,$parent_id,$rate_kbits,$ceil_kbits)
+    function __construct($interface_name,$parent_id,$rate_kbits,$ceil_kbits)
     {
-        parent::Request("bw.addNode",array("interface_name"=>$interface_name,
+        parent::__construct("bw.addNode",array("interface_name"=>$interface_name,
                                            "parent_id"=>$parent_id,
                                            "rate_kbits"=>$rate_kbits,
                                            "ceil_kbits"=>$ceil_kbits));
@@ -23,9 +23,9 @@ class AddNode extends Request
 
 class AddLeaf extends Request
 {
-    function AddLeaf($leaf_name,$parent_id,$default_rate_kbits,$default_ceil_kbits,$total_rate_kbits,$total_ceil_kbits)
+    function __construct($leaf_name,$parent_id,$default_rate_kbits,$default_ceil_kbits,$total_rate_kbits,$total_ceil_kbits)
     {
-        parent::Request("bw.addLeaf",array("leaf_name"=>$leaf_name,
+        parent::__construct("bw.addLeaf",array("leaf_name"=>$leaf_name,
                                            "parent_id"=>$parent_id,
                                            "default_rate_kbits"=>$default_rate_kbits,
                                            "default_ceil_kbits"=>$default_ceil_kbits,
@@ -37,9 +37,9 @@ class AddLeaf extends Request
 
 class AddLeafService extends Request
 {
-    function AddLeafService($leaf_name,$protocol,$filter,$rate_kbits,$ceil_kbits)
+    function __construct($leaf_name,$protocol,$filter,$rate_kbits,$ceil_kbits)
     {
-        parent::Request("bw.addLeafService",array("leaf_name"=>$leaf_name,
+        parent::__construct("bw.addLeafService",array("leaf_name"=>$leaf_name,
                                                   "protocol"=>$protocol,
                                                   "filter"=>$filter,
                                                   "rate_kbits"=>$rate_kbits,
@@ -50,83 +50,83 @@ class AddLeafService extends Request
 
 class GetInterfaces extends Request
 {
-    function getInterfaces()
+    function __construct()
     {
-        parent::Request("bw.getInterfaces",array());
+        parent::__construct("bw.getInterfaces",array());
     }
 }
 
 class GetNodeInfo extends Request
 {
-    function getNodeInfo($node_id)
+    function __construct($node_id)
     {
-        parent::Request("bw.getNodeInfo",array("node_id"=>$node_id));
+        parent::__construct("bw.getNodeInfo",array("node_id"=>$node_id));
     }
 }
 
 class GetLeafInfo extends Request
 {
-    function getLeafInfo($leaf_name)
+    function __construct($leaf_name)
     {
-        parent::Request("bw.getLeafInfo",array("leaf_name"=>$leaf_name));
+        parent::__construct("bw.getLeafInfo",array("leaf_name"=>$leaf_name));
     }
 }
 
 class GetTree extends Request
 {
-    function getTree($interface_name)
+    function __construct($interface_name)
     {
-        parent::Request("bw.getTree",array("interface_name"=>$interface_name));
+        parent::__construct("bw.getTree",array("interface_name"=>$interface_name));
     }
 }
 
 class DelLeafService extends Request
 {
-    function DelLeafService($leaf_name,$leaf_service_id)
+    function __construct($leaf_name,$leaf_service_id)
     {
-        parent::Request("bw.delLeafService",array("leaf_name"=>$leaf_name,
+        parent::__construct("bw.delLeafService",array("leaf_name"=>$leaf_name,
                                                   "leaf_service_id"=>$leaf_service_id));
     }
 }
 
 class GetAllLeafNames extends Request
 {
-    function GetAllLeafNames()
+    function __construct()
     {
-        parent::Request("bw.getAllLeafNames",array());
+        parent::__construct("bw.getAllLeafNames",array());
     }
 }
 
 class DelNode extends Request
 {
-    function DelNode($node_id)
+    function __construct($node_id)
     {
-        parent::Request("bw.delNode",array("node_id"=>$node_id));
+        parent::__construct("bw.delNode",array("node_id"=>$node_id));
     }
 }
 
 class DelLeaf extends Request
 {
-    function DelLeaf($leaf_name)
+    function __construct($leaf_name)
     {
-        parent::Request("bw.delLeaf",array("leaf_name"=>$leaf_name));
+        parent::__construct("bw.delLeaf",array("leaf_name"=>$leaf_name));
     }
 }
 
 
 class DelInterface extends Request
 {
-    function DelInterface($interface_name)
+    function __construct($interface_name)
     {
-        parent::Request("bw.delInterface",array("interface_name"=>$interface_name));
+        parent::__construct("bw.delInterface",array("interface_name"=>$interface_name));
     }
 }
 
 class UpdateInterface extends Request
 {
-    function UpdateInterface($interface_id,$interface_name,$comment)
+    function __construct($interface_id,$interface_name,$comment)
     {
-        parent::Request("bw.updateInterface",array( "interface_id"=>$interface_id,
+        parent::__construct("bw.updateInterface",array( "interface_id"=>$interface_id,
                                                     "interface_name"=>$interface_name,
                                                     "comment"=>$comment));
     }
@@ -134,9 +134,9 @@ class UpdateInterface extends Request
 
 class UpdateNode extends Request
 {
-    function UpdateNode($node_id,$rate_kbits,$ceil_kbits)
+    function __construct($node_id,$rate_kbits,$ceil_kbits)
     {
-        parent::Request("bw.updateNode",array("node_id"=>$node_id,
+        parent::__construct("bw.updateNode",array("node_id"=>$node_id,
                                               "rate_kbits"=>$rate_kbits,
                                               "ceil_kbits"=>$ceil_kbits));
     }
@@ -144,9 +144,9 @@ class UpdateNode extends Request
 
 class UpdateLeaf extends Request
 {
-    function UpdateLeaf($leaf_id,$leaf_name,$default_rate_kbits,$default_ceil_kbits,$total_rate_kbits,$total_ceil_kbits)
+    function __construct($leaf_id,$leaf_name,$default_rate_kbits,$default_ceil_kbits,$total_rate_kbits,$total_ceil_kbits)
     {
-        parent::Request("bw.updateLeaf",array("leaf_id"=>$leaf_id,
+        parent::__construct("bw.updateLeaf",array("leaf_id"=>$leaf_id,
                                            "leaf_name"=>$leaf_name,
                                            "default_rate_kbits"=>$default_rate_kbits,
                                            "default_ceil_kbits"=>$default_ceil_kbits,
@@ -158,9 +158,9 @@ class UpdateLeaf extends Request
 
 class UpdateLeafService extends Request
 {
-    function UpdateLeafService($leaf_name,$leaf_service_id,$protocol,$filter,$rate_kbits,$ceil_kbits)
+    function __construct($leaf_name,$leaf_service_id,$protocol,$filter,$rate_kbits,$ceil_kbits)
     {
-        parent::Request("bw.updateLeafService",array("leaf_name"=>$leaf_name,
+        parent::__construct("bw.updateLeafService",array("leaf_name"=>$leaf_name,
                                                   "leaf_service_id"=>$leaf_service_id,
                                                   "protocol"=>$protocol,
                                                   "filter"=>$filter,
@@ -172,9 +172,9 @@ class UpdateLeafService extends Request
 
 class AddBwStaticIP extends Request
 {
-    function addBwStaticIP($ip_addr,$tx_leaf_name,$rx_leaf_name)
+    function __construct($ip_addr,$tx_leaf_name,$rx_leaf_name)
     {
-        parent::Request("bw.addBwStaticIP",array("ip_addr"=>$ip_addr,
+        parent::__construct("bw.addBwStaticIP",array("ip_addr"=>$ip_addr,
                                               "tx_leaf_name"=>$tx_leaf_name,
                                               "rx_leaf_name"=>$rx_leaf_name));
     }
@@ -182,9 +182,9 @@ class AddBwStaticIP extends Request
 
 class UpdateBwStaticIP extends Request
 {
-    function UpdateBwStaticIP($static_ip_id,$ip_addr,$tx_leaf_name,$rx_leaf_name)
+    function __construct($static_ip_id,$ip_addr,$tx_leaf_name,$rx_leaf_name)
     {
-        parent::Request("bw.updateBwStaticIP",array("ip_addr"=>$ip_addr,
+        parent::__construct("bw.updateBwStaticIP",array("ip_addr"=>$ip_addr,
                                               "tx_leaf_name"=>$tx_leaf_name,
                                               "rx_leaf_name"=>$rx_leaf_name,
                                               "static_ip_id"=>$static_ip_id));
@@ -193,41 +193,41 @@ class UpdateBwStaticIP extends Request
 
 class DelBwStaticIP extends Request
 {
-    function DelBwStaticIP($ip_addr)
+    function __construct($ip_addr)
     {
-        parent::Request("bw.delBwStaticIP",array("ip_addr"=>$ip_addr));
+        parent::__construct("bw.delBwStaticIP",array("ip_addr"=>$ip_addr));
     }
 }
 
 class GetAllBwStaticIPs extends Request
 {
-    function GetAllBwStaticIPs()
+    function __construct()
     {
-        parent::Request("bw.getAllBwStaticIPs",array());
+        parent::__construct("bw.getAllBwStaticIPs",array());
     }
 }
 
 class GetBwStaticIPInfo extends Request
 {
-    function GetBwStaticIPInfo($ip_addr)
+    function __construct($ip_addr)
     {
-        parent::Request("bw.getBwStaticIPInfo",array("ip_addr"=>$ip_addr));
+        parent::__construct("bw.getBwStaticIPInfo",array("ip_addr"=>$ip_addr));
     }
 }
 
 class GetAllActiveLeaves extends Request
 {
-    function GetAllActiveLeaves()
+    function __construct()
     {
-        parent::Request("bw.getActiveLeaves",array());
+        parent::__construct("bw.getActiveLeaves",array());
     }
 }
 
 class GetLeafCharges extends Request
 {
-    function GetLeafCharges($leaf_name)
+    function __construct($leaf_name)
     {
-        parent::Request("bw.getLeafCharges",array("leaf_name"=>$leaf_name));
+        parent::__construct("bw.getLeafCharges",array("leaf_name"=>$leaf_name));
     }
 }
 

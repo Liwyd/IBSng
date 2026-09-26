@@ -49,7 +49,7 @@ class PolarPlot {
     private $iLineWeight=1;
     private $coord=null;
 
-    function PolarPlot($aData) {
+    function __construct($aData) {
         $n = count($aData);
         if( $n & 1 ) {
             JpGraphError::Raise('Polar plots must have an even number of data point. Each data point is a tuple (angle,radius).');
@@ -161,8 +161,8 @@ class PolarAxis extends Axis {
     private $show_angle_tick=true;
     private $radius_tick_color='black';
 
-    function PolarAxis($img,$aScale) {
-        parent::Axis($img,$aScale);
+    function __construct($img,$aScale) {
+        parent::__construct($img,$aScale);
     }
 
     function ShowAngleDegreeMark($aFlg=true) {
@@ -409,7 +409,7 @@ class PolarAxis extends Axis {
                 if( $a != 0 && $a != 180 ) {
                     $t->Align($ha,$va);
                     if( $this->show_angle_mark )
-                        $a .= '°';
+                        $a .= 'ï¿½';
                     $t->Set($a);
                     $t->Stroke($this->img,$xt,$yt);   
                     if( $this->show_angle_tick )
@@ -472,7 +472,7 @@ class PolarAxis extends Axis {
                 }
                 $t->Align($ha,$va);
                 if( $this->show_angle_mark )
-                    $a .= '°';
+                    $a .= 'ï¿½';
                 $t->Set($a);
                 $t->Stroke($this->img,$xt,$yt);  
                 if( $this->show_angle_tick )
@@ -577,8 +577,8 @@ class PolarAxis extends Axis {
 class PolarScale extends LinearScale {
     private $graph;
 
-    function PolarScale($aMax=0,$graph) {
-        parent::LinearScale(0,$aMax,'x');
+    function __construct($aMax=0,$graph) {
+        parent::__construct(0,$aMax,'x');
         $this->graph = $graph;
     }
 
@@ -609,8 +609,8 @@ class PolarScale extends LinearScale {
 
 class PolarLogScale extends LogScale {
     private $graph;
-    function PolarLogScale($aMax=1,$graph) {
-        parent::LogScale(0,$aMax,'x');
+    function __construct($aMax=1,$graph) {
+        parent::__construct(0,$aMax,'x');
         $this->graph = $graph;
         $this->ticks->SetLabelLogType(LOGLABELS_MAGNITUDE);
 
@@ -644,8 +644,8 @@ class PolarGraph extends Graph {
     public $axis;
     public $iType=POLAR_360;
     
-    function PolarGraph($aWidth=300,$aHeight=200,$aCachedName="",$aTimeOut=0,$aInline=true) {
-        parent::Graph($aWidth,$aHeight,$aCachedName,$aTimeOut,$aInline) ;
+    function __construct($aWidth=300,$aHeight=200,$aCachedName="",$aTimeOut=0,$aInline=true) {
+        parent::__construct($aWidth,$aHeight,$aCachedName,$aTimeOut,$aInline) ;
         $this->SetDensity(TICKD_DENSE);
         $this->SetBox();
         $this->SetMarginColor('white');

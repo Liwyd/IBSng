@@ -45,8 +45,8 @@ class BarPlot extends Plot {
         
 //---------------
 // CONSTRUCTOR
-    function BarPlot($datay,$datax=false) {
-        $this->Plot($datay,$datax);             
+    function __construct($datay,$datax=false) {
+        parent::__construct($datay,$datax);             
         ++$this->numpoints;
     }
 
@@ -507,7 +507,7 @@ class GroupBarPlot extends BarPlot {
     private $nbrplots=0;
 //---------------
 // CONSTRUCTOR
-    function GroupBarPlot($plots) {
+    function __construct($plots) {
         $this->plots = $plots;
         $this->nbrplots = count($plots);
         if( $this->nbrplots < 1 ) {
@@ -592,7 +592,7 @@ class AccBarPlot extends BarPlot {
     private $plots=null,$nbrplots=0;
 //---------------
 // CONSTRUCTOR
-    function AccBarPlot($plots) {
+    function __construct($plots) {
         $this->plots = $plots;
         $this->nbrplots = count($plots);
         $this->numpoints = $plots[0]->numpoints;                

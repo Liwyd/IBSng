@@ -6,7 +6,7 @@ require_once(IBSINC."lib.php");
 
 class IBSxmlrpc
 {
-    function IBSxmlrpc($server_ip=XMLRPC_SERVER_IP,$server_port=XMLRPC_SERVER_PORT)
+    function __construct($server_ip=XMLRPC_SERVER_IP,$server_port=XMLRPC_SERVER_PORT)
     {
     /*
         $server_ip: xml rpc server ip address

@@ -3,17 +3,17 @@ require_once("init.php");
 
 class GetAllDefs extends Request
 {
-    function getAllDefs()
+    function __construct()
     {
-        parent::Request("ibs_defs.getAllDefs",array());
+        parent::__construct("ibs_defs.getAllDefs",array());
     }
 }
 
 class SaveDefs extends Request
 {
-    function SaveDefs($defs)
+    function __construct($defs)
     {
-        parent::Request("ibs_defs.saveDefs",array("defs"=>$defs));
+        parent::__construct("ibs_defs.saveDefs",array("defs"=>$defs));
     }
 
 }

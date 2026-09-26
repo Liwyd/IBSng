@@ -6,9 +6,9 @@ require_once ("credit_changes_report_creator.php");
 
 class CreditChangeReportGeneratorController extends ReportGeneratorController
 {
-	function CreditChangeReportGeneratorController()
+	function __construct()
 	{
-		parent :: ReportGeneratorController();
+		parent::__construct();
 
 		$this->total_rows = 0;
 		$this->total_admin_credit = 0;

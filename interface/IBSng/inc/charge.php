@@ -3,9 +3,9 @@ require_once("init.php");
 
 class AddNewCharge extends Request
 {
-    function AddNewCharge($name,$charge_type,$visible_to_all,$comment)
+    function __construct($name,$charge_type,$visible_to_all,$comment)
     {
-        parent::Request("charge.addNewCharge",array("name"=>$name,
+        parent::__construct("charge.addNewCharge",array("name"=>$name,
                                                  "comment"=>$comment,
                                                  "charge_type"=>$charge_type,
                                                  "visible_to_all"=>($visible_to_all==TRUE)?"t":"f"
@@ -15,9 +15,9 @@ class AddNewCharge extends Request
 
 class UpdateCharge extends Request
 {
-    function UpdateCharge($charge_id,$charge_name,$visible_to_all,$comment)
+    function __construct($charge_id,$charge_name,$visible_to_all,$comment)
     {
-        parent::Request("charge.updateCharge",array("charge_id"=>$charge_id,
+        parent::__construct("charge.updateCharge",array("charge_id"=>$charge_id,
                                                  "charge_name"=>$charge_name,
                                                  "comment"=>$comment,
                                                  "visible_to_all"=>($visible_to_all==TRUE)?"t":"f"
@@ -28,7 +28,7 @@ class UpdateCharge extends Request
 
 class GetChargeInfo extends Request
 {
-    function GetChargeInfo($charge_name,$charge_id=null)
+    function __construct($charge_name,$charge_id=null)
     {/*
         $charge_name : name of charge to get info, can be null if you want to set $charge_id
         $charge_id: id of charge to get info, can be null if you want to use $charge_name
@@ -39,17 +39,17 @@ class GetChargeInfo extends Request
         else if (!is_null($charge_id))
             $params["charge_id"]=$charge_id;
 
-        parent::Request("charge.getChargeInfo",$params);
+        parent::__construct("charge.getChargeInfo",$params);
     }
 }
 
 
 class AddInternetChargeRule extends Request
 {
-    function AddInternetChargeRule($charge_name,$rule_start,$rule_end,$cpm,$cpk,
+    function __construct($charge_name,$rule_start,$rule_end,$cpm,$cpk,
                             $assumed_kps,$bandwidth_limit_kbytes,$tx_leaf_name,$rx_leaf_name,$ras,$ports,$dows)
     {
-        parent::Request("charge.addInternetChargeRule",array("charge_name"=>$charge_name,
+        parent::__construct("charge.addInternetChargeRule",array("charge_name"=>$charge_name,
                                                              "rule_start"=>$rule_start,
                                                              "rule_end"=>$rule_end,
                                                              "cpm"=>$cpm,
@@ -67,31 +67,31 @@ class AddInternetChargeRule extends Request
 
 class ListChargeRules extends Request
 {
-    function ListChargeRules($charge_name)
+    function __construct($charge_name)
     {
-        parent::Request("charge.listChargeRules",array("charge_name"=>$charge_name));
+        parent::__construct("charge.listChargeRules",array("charge_name"=>$charge_name));
     }
 }
 
 class ListCharges extends Request
 {
-    function ListCharges($charge_type=null)
+    function __construct($charge_type=null)
     {
         if(is_null($charge_type))
             $params=array();
         else
             $params=array("charge_type"=>$charge_type);
 
-        parent::Request("charge.listCharges",$params);
+        parent::__construct("charge.listCharges",$params);
     }
 }
 
 class UpdateInternetChargeRule extends Request
 {
-    function UpdateInternetChargeRule($charge_name,$charge_rule_id,$rule_start,$rule_end,$cpm,$cpk,
+    function __construct($charge_name,$charge_rule_id,$rule_start,$rule_end,$cpm,$cpk,
                             $assumed_kps,$bandwidth_limit_kbytes,$tx_leaf_name,$rx_leaf_name,$ras,$ports,$dows)
     {
-        parent::Request("charge.updateInternetChargeRule",array("charge_name"=>$charge_name,
+        parent::__construct("charge.updateInternetChargeRule",array("charge_name"=>$charge_name,
                                                              "charge_rule_id"=>$charge_rule_id,
                                                              "rule_start"=>$rule_start,
                                                              "rule_end"=>$rule_end,
@@ -110,26 +110,26 @@ class UpdateInternetChargeRule extends Request
 
 class DelChargeRule extends Request
 {
-    function DelChargeRule($charge_rule_id,$charge_name)
+    function __construct($charge_rule_id,$charge_name)
     {
-        parent::Request("charge.delChargeRule",array("charge_rule_id"=>$charge_rule_id,
+        parent::__construct("charge.delChargeRule",array("charge_rule_id"=>$charge_rule_id,
                                                      "charge_name"=>$charge_name));
     }
 }
 
 class DelCharge extends Request
 {
-    function DelCharge($charge_name)
+    function __construct($charge_name)
     {
-        parent::Request("charge.delCharge",array("charge_name"=>$charge_name));
+        parent::__construct("charge.delCharge",array("charge_name"=>$charge_name));
     }
 }
 
 class AddVoIPChargeRule extends Request
 {
-    function AddVoIPChargeRule($charge_name,$rule_start,$rule_end,$tariff_name,$ras,$ports,$dows)
+    function __construct($charge_name,$rule_start,$rule_end,$tariff_name,$ras,$ports,$dows)
     {
-        parent::Request("charge.addVoIPChargeRule",array("charge_name"=>$charge_name,
+        parent::__construct("charge.addVoIPChargeRule",array("charge_name"=>$charge_name,
                                                              "rule_start"=>$rule_start,
                                                              "rule_end"=>$rule_end,
                                                              "tariff_name"=>$tariff_name,
@@ -142,9 +142,9 @@ class AddVoIPChargeRule extends Request
 
 class UpdateVoIPChargeRule extends Request
 {
-    function UpdateVoIPChargeRule($charge_name,$charge_rule_id,$rule_start,$rule_end,$tariff_name,$ras,$ports,$dows)
+    function __construct($charge_name,$charge_rule_id,$rule_start,$rule_end,$tariff_name,$ras,$ports,$dows)
     {
-        parent::Request("charge.updateVoIPChargeRule",array("charge_name"=>$charge_name,
+        parent::__construct("charge.updateVoIPChargeRule",array("charge_name"=>$charge_name,
                                                              "charge_rule_id"=>$charge_rule_id,
                                                              "rule_start"=>$rule_start,
                                                              "rule_end"=>$rule_end,

@@ -5,9 +5,9 @@ require_once("report_lib.php");
 
 class GetOnlineUsers extends Request
 {
-    function GetOnlineUsers($normal_sort_by, $normal_desc, $voip_sort_by, $voip_desc, $conds)
+    function __construct($normal_sort_by, $normal_desc, $voip_sort_by, $voip_desc, $conds)
     {
-        parent::Request("report.getOnlineUsers",array("normal_sort_by"=>$normal_sort_by,
+        parent::__construct("report.getOnlineUsers",array("normal_sort_by"=>$normal_sort_by,
                                                       "normal_desc"=>$normal_desc,
                                                       "voip_sort_by"=>$voip_sort_by,
                                                       "voip_desc"=>$voip_desc,
@@ -17,9 +17,9 @@ class GetOnlineUsers extends Request
 
 class GetConnections extends Request
 {
-    function GetConnections($conds,$from,$to,$sort_by,$desc)
+    function __construct($conds,$from,$to,$sort_by,$desc)
     {
-        parent::Request("report.getConnections",array("conds"=>$conds,
+        parent::__construct("report.getConnections",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to,
                                                       "sort_by"=>$sort_by,
@@ -29,57 +29,57 @@ class GetConnections extends Request
 
 class GetDurations extends Request
 {
-    function GetDurations($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getDurations",array("conds"=>$conds));
+        parent::__construct("report.getDurations",array("conds"=>$conds));
     }    
 }
 
 class GetGroupUsages extends Request
 {
-    function GetGroupUsages($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getGroupUsages",array("conds"=>$conds));
+        parent::__construct("report.getGroupUsages",array("conds"=>$conds));
     }    
 }
 
 class GetRasUsages extends Request
 {
-    function GetRasUsages($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getRasUsages",array("conds"=>$conds));
+        parent::__construct("report.getRasUsages",array("conds"=>$conds));
     }    
 }
 
 class GetAdminUsages extends Request
 {
-    function GetAdminUsages($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getAdminUsages",array("conds"=>$conds));
+        parent::__construct("report.getAdminUsages",array("conds"=>$conds));
     }    
 }
 
 class GetVoIPDisconnectCausesCount extends Request
 {
-    function GetVoIPDisconnectCausesCount($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getVoIPDisconnectCauses",array("conds"=>$conds));
+        parent::__construct("report.getVoIPDisconnectCauses",array("conds"=>$conds));
     }    
 }
 
 class GetSuccessfulCounts extends Request
 {
-    function GetSuccessfulCounts($conds)
+    function __construct($conds)
     {
-        parent::Request("report.getSuccessfulCounts",array("conds"=>$conds));
+        parent::__construct("report.getSuccessfulCounts",array("conds"=>$conds));
     }    
 }
 
 class GetCreditChanges extends Request
 {
-    function GetCreditChanges($conds,$from,$to,$sort_by,$desc)
+    function __construct($conds,$from,$to,$sort_by,$desc)
     {
-        parent::Request("report.getCreditChanges",array("conds"=>$conds,
+        parent::__construct("report.getCreditChanges",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to,
                                                       "sort_by"=>$sort_by,
@@ -89,9 +89,9 @@ class GetCreditChanges extends Request
 
 class GetUserAuditLogs extends Request
 {
-    function GetUserAuditLogs($conds,$from,$to,$sort_by,$desc)
+    function __construct($conds,$from,$to,$sort_by,$desc)
     {
-        parent::Request("report.getUserAuditLogs",array("conds"=>$conds,
+        parent::__construct("report.getUserAuditLogs",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to,
                                                       "sort_by"=>$sort_by,
@@ -101,9 +101,9 @@ class GetUserAuditLogs extends Request
 
 class GetAdminDepositChangeLogs extends Request
 {
-    function GetAdminDepositChangeLogs($conds,$from,$to,$sort_by,$desc)
+    function __construct($conds,$from,$to,$sort_by,$desc)
     {
-        parent::Request("report.getAdminDepositChangeLogs",array("conds"=>$conds,
+        parent::__construct("report.getAdminDepositChangeLogs",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to,
                                                       "sort_by"=>$sort_by,
@@ -114,9 +114,9 @@ class GetAdminDepositChangeLogs extends Request
 
 class DeleteReports extends Request
 {
-    function DeleteReports($table, $date, $date_unit)
+    function __construct($table, $date, $date_unit)
     {
-        parent::Request("report.delReports",array("table"=>$table,
+        parent::__construct("report.delReports",array("table"=>$table,
                                                   "date"=>$date,
                                                   "date_unit"=>$date_unit));
     }    
@@ -124,13 +124,13 @@ class DeleteReports extends Request
 
 class AutoCleanReports extends Request
 {
-    function AutoCleanReports($connection_log_clean, $connection_log_unit,
+    function __construct($connection_log_clean, $connection_log_unit,
                               $credit_change_clean, $credit_change_unit,
                               $user_audit_log_clean, $user_audit_log_unit,
                               $snapshots_clean, $snapshots_unit,
                               $web_analyzer_clean, $web_analyzer_unit)
     {
-        parent::Request("report.autoCleanReports",array("connection_log_clean"=>$connection_log_clean,
+        parent::__construct("report.autoCleanReports",array("connection_log_clean"=>$connection_log_clean,
                                                         "connection_log_unit"=>$connection_log_unit,
                                                         "credit_change_clean"=>$credit_change_clean,
                                                         "credit_change_unit"=>$credit_change_unit,
@@ -145,17 +145,17 @@ class AutoCleanReports extends Request
 
 class GetReportAutoCleanDates extends Request
 {
-    function GetReportAutoCleanDates()
+    function __construct()
     {
-        parent::Request("report.getAutoCleanDates",array());
+        parent::__construct("report.getAutoCleanDates",array());
     }    
 }
 
 class GetWebAnalyzerReport extends Request
 {
-    function GetWebAnalyzerReport($conds,$from,$to,$sort_by,$desc)
+    function __construct($conds,$from,$to,$sort_by,$desc)
     {
-        parent::Request("web_analyzer.getWebAnalyzerLogs",array("conds"=>$conds,
+        parent::__construct("web_analyzer.getWebAnalyzerLogs",array("conds"=>$conds,
                                                                 "from"=>$from,
                                                                 "to"=>$to,
                                                                 "sort_by"=>$sort_by,
@@ -165,9 +165,9 @@ class GetWebAnalyzerReport extends Request
 
 class GetTopVisitedReport extends Request
 {
-    function GetTopVisitedReport($conds, $from,$to)
+    function __construct($conds, $from,$to)
     {
-        parent::Request("web_analyzer.getTopVisited",array("conds"=>$conds,
+        parent::__construct("web_analyzer.getTopVisited",array("conds"=>$conds,
                                                                 "from"=>$from,
                                                                 "to"=>$to
                                                                 ));
@@ -176,17 +176,17 @@ class GetTopVisitedReport extends Request
 
 class GetConsoleBuffer extends Request
 {
-    function GetConsoleBuffer()
+    function __construct()
     {
-        parent::Request("log_console.getConsoleBuffer",array());
+        parent::__construct("log_console.getConsoleBuffer",array());
     }    
 }
 
 class GetInOutUsages extends Request
 {
-    function GetInOutUsages($conds,$from,$to)
+    function __construct($conds,$from,$to)
     {
-        parent::Request("report.getInOutUsages",array("conds"=>$conds,
+        parent::__construct("report.getInOutUsages",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to));
     }    
@@ -194,9 +194,9 @@ class GetInOutUsages extends Request
 
 class GetCreditUsages extends Request
 {
-    function GetCreditUsages($conds,$from,$to)
+    function __construct($conds,$from,$to)
     {
-        parent::Request("report.getCreditUsages",array("conds"=>$conds,
+        parent::__construct("report.getCreditUsages",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to));
     }    
@@ -204,9 +204,9 @@ class GetCreditUsages extends Request
 
 class GetDurationUsages extends Request
 {
-    function GetDurationUsages($conds,$from,$to)
+    function __construct($conds,$from,$to)
     {
-        parent::Request("report.getDurationUsages",array("conds"=>$conds,
+        parent::__construct("report.getDurationUsages",array("conds"=>$conds,
                                                       "from"=>$from,
                                                       "to"=>$to));
     }    

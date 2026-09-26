@@ -7,9 +7,9 @@ require_once (IBSINC."../admin/report/connection_logs/connection_logs_report_gen
 
 class UserConnectionLogsReportGeneratorController extends ConnectionLogsReportGeneratorController
 {
-	function UserConnectionLogsReportGeneratorController()
+	function __construct()
 	{
-		parent :: ConnectionLogsReportGeneratorController();
+		parent::__construct();
 
 		$this->total_rows = 0;
 		$this->total_credit = 0;

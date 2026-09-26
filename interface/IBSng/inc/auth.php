@@ -86,7 +86,7 @@ function showAccessDenied($auth_type)
 class Auth
 {
     
-    function Auth($auth_name,$auth_pass,$auth_type)
+    function __construct($auth_name,$auth_pass,$auth_type)
     {
         $this->auth_name=$auth_name;
         $this->auth_pass=$auth_pass;

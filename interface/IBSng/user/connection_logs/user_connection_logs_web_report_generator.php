@@ -10,9 +10,9 @@ require_once (IBSINC . "generator/report_generator/web_report_generator.php");
 
 class UserConnectionLogsWebReportGenerator extends WebReportGenerator
 {
-	function UserConnectionLogsWebReportGenerator()
+	function __construct()
 	{
-		parent :: WebReportGenerator();
+		parent::__construct();
 	}
 
 	function init()

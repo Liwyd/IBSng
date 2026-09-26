@@ -112,7 +112,7 @@ function getLoginPageURI()
 {
 	// can getCurrentHostAndURI return any string like this 'http://' ??
 	// get pattern for string like this : parspooyesh.com/(XXX|IBSng)/admin/
-	eregi("^([^/]+)/([^/]+)/([^/]+)", getCurrentHostAndURI(), $matches);
+	preg_match('#^([^/]+)/([^/]+)/([^/]+)#i',  getCurrentHostAndURI(), $matches);
 	$size = count($matches);
 
 	$extracted_uri = "";
