@@ -31,7 +31,12 @@ class Password:
         self.password=password
 
     def __eq__(self,password_obj):
-        if isinstance(password_obj, (str, bytes)):
+        if isinstance(password_obj, bytes):
+            try:
+                password_obj=password_obj.decode("utf-8")
+            except UnicodeDecodeError:
+                password_obj=password_obj.decode("latin-1")
+        if isinstance(password_obj, str):
             password_obj=Password(password_obj)
 
         if self.isMd5Hash():

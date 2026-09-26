@@ -32,6 +32,8 @@ class RemoteHost:
                 @type   acctport: integer
                 """
                 self.address=address
+                if isinstance(secret, str):
+                        secret=secret.encode('utf-8')
                 self.secret=secret
                 self.authport=authport
                 self.acctport=acctport

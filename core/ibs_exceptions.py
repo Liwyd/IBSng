@@ -38,23 +38,19 @@ def toLog(_str,log_file,debug_level=0,add_stack=0):
     if debug_level>defs.DEBUG_LEVEL: 
         return
 
-    if log_file & LOG_ERROR:
-        error_log_handle.write(_str,add_stack)
-
-    if log_file & LOG_RADIUS:
-        radius_log_handle.write(_str,add_stack)
-
-    if log_file & LOG_SERVER:
-        server_log_handle.write(_str,add_stack)
-
-    if log_file & LOG_QUERY:
-        query_log_handle.write(_str,add_stack)
-
-    if log_file & LOG_DEBUG:
-        debug_log_handle.write(_str,add_stack)
-
-    if log_file & LOG_CONSOLE:
-        console_log_handle.write(_str,add_stack)
+    # handles only exist after init(); logging before init (tests, early
+    # startup errors) must not raise and mask the original error
+    _handles = globals()
+    for _flag, _name in ((LOG_ERROR, "error_log_handle"),
+                         (LOG_RADIUS, "radius_log_handle"),
+                         (LOG_SERVER, "server_log_handle"),
+                         (LOG_QUERY, "query_log_handle"),
+                         (LOG_DEBUG, "debug_log_handle"),
+                         (LOG_CONSOLE, "console_log_handle")):
+        if log_file & _flag:
+            _handle = _handles.get(_name)
+            if _handle != None:
+                _handle.write(_str, add_stack)
 
 def getExceptionText():
     """

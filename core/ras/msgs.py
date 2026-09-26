@@ -89,6 +89,13 @@ class RasMsg(Msg):
     """
     conversion_map = {"caller_id":lambda caller_id: caller_id_filter_sub.sub("", caller_id)}
 
+    # string-typed attributes that carry binary payloads and must stay bytes
+    # (obfuscated passwords, keys) - everything else string-typed is decoded
+    # to text for the engine (user lookups, DB queries)
+    BINARY_STRING_ATTRS = frozenset(("User-Password", "Tunnel-Password",
+                                     "EAP-Message", "MS-CHAP-MPPE-Keys",
+                                     "MS-MPPE-Recv-Key", "MS-MPPE-Send-Key"))
+
     def __init__(self,request_pkt,reply_pkt,ras_obj):
         Msg.__init__(self)
         self.request_pkt=request_pkt
@@ -130,13 +137,30 @@ class RasMsg(Msg):
         """
         try:
             value = self.getRequestAttr(request_key)[0]
-            
+            value = self.__decodeStringAttr(request_key, value)
+
             if attr_name in self.conversion_map:
                 value = self.conversion_map[attr_name](value)
             
             self[attr_name] = value
         except KeyError:
             raise IBSException("Attribute %s not found in request packet"%request_key)
+
+    def __decodeStringAttr(self, request_key, value):
+        """
+            pyrad hands out raw bytes for wire-decoded string attributes;
+            engine code expects text. octets-type attributes (CHAP/MS-CHAP
+            material) and obfuscated passwords stay bytes.
+        """
+        if not isinstance(value, bytes) or request_key in RasMsg.BINARY_STRING_ATTRS:
+            return value
+        try:
+            attr = self.request_pkt.dict.attributes[request_key]
+        except (KeyError, AttributeError):
+            return value
+        if attr.type != "string":
+            return value
+        return value.decode("utf-8", "replace")
 
     def setRequestToAttrIfExists(self,request_key,attr_name):
         """

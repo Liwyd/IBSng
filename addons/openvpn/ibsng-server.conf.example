@@ -1,0 +1,45 @@
+# OpenVPN server configuration snippet for IBSng accounting (RADIUS NAS model).
+# Include/merge into your openvpn-server config; adjust paths for your install.
+#
+# IBSng side:
+#   1. Admin UI: RAS -> Add RAS, Type "openvpn", IP = this host (127.0.0.1
+#      when OpenVPN and IBSng share a machine - the RAS is matched by packet
+#      source IP), any shared RADIUS secret.
+#   2. RAS attribute "openvpn_mgmt_socket" must point at the management
+#      socket below (used to kick users from the admin UI).
+
+port 1194
+proto udp
+dev tun
+topology subnet
+server 10.8.0.0 255.255.255.0
+persist-key
+persist-tun
+
+# authentication: username/password handed to IBSng via RADIUS Access-Request
+script-security 2
+auth-user-pass-verify /usr/local/ibsng/addons/openvpn/openvpn_agent.py auth via-file
+# cert auth may stay enabled; CN is only used as fallback identity by OpenVPN,
+# IBSng authenticates the PAP username
+
+# accounting: RADIUS Accounting Start/Stop
+client-connect /usr/local/ibsng/addons/openvpn/openvpn_agent.py start
+client-disconnect /usr/local/ibsng/addons/openvpn/openvpn_agent.py stop
+
+# interim accounting (cron) reads this file:
+#   * * * * * /usr/local/ibsng/addons/openvpn/openvpn_agent.py interim --status-file /run/openvpn/ibsng.status
+# (put IBSNG_RADIUS_SECRET in /etc/ibsng/openvpn_agent.env instead of the crontab)
+status /run/openvpn/ibsng.status 30
+status-version 2
+
+# management socket for admin-side disconnects (RAS attr openvpn_mgmt_socket)
+management /run/openvpn/ibsng.sock unix
+
+# agent configuration
+# IBSNG_AUTH_DIR remembers the authenticated username for the lifetime of a
+# session (connect/status hooks only see the certificate common_name)
+setenv IBSNG_AUTH_DIR /run/openvpn/ibsng-auth
+setenv IBSNG_RADIUS_SECRET "CHANGE_ME_TO_THE_RAS_SECRET"
+setenv IBSNG_RADIUS_HOST 127.0.0.1
+setenv IBSNG_RADIUS_AUTH_PORT 1812
+setenv IBSNG_RADIUS_ACCT_PORT 1813
