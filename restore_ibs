@@ -38,6 +38,11 @@ manage_service() {
   if [ "${IBS_BACKUP_SKIP_SERVICE:-0}" = "1" ]; then
     return 0
   fi
+  # install.sh registers the systemd unit as "ibsng.service"; legacy
+  # installs used /etc/init.d/IBSng - try both, systemd unit first.
+  if service ibsng "$1" 2>/dev/null; then
+    return 0
+  fi
   service IBSng "$1"
 }
 
