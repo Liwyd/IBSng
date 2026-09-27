@@ -534,6 +534,17 @@ EOF
         systemctl reload-or-restart apache2 >/dev/null 2>&1 || \
             systemctl reload-or-restart httpd >/dev/null 2>&1 || \
             warn "could not (re)load web server"
+        # reload can succeed and the daemon still die a moment later
+        # (stale master after a package reinstall) - verify it stays up
+        local _web_svc=apache2
+        systemctl cat apache2 >/dev/null 2>&1 || _web_svc=httpd
+        sleep 1
+        if ! systemctl is-active --quiet "$_web_svc"; then
+            systemctl start "$_web_svc" >/dev/null 2>&1 || true
+            sleep 1
+        fi
+        systemctl is-active --quiet "$_web_svc" || \
+            warn "web server is not running - check: journalctl -u $_web_svc"
     else
         apachectl -t >/dev/null 2>&1 || warn "apache configuration test failed"
         info "no systemd - web server config validated; start apache from your init"
