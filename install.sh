@@ -13,6 +13,10 @@
 #
 set -euo pipefail
 
+UNINSTALL=0
+KEEP_DB=0
+PURGE_PKGS=0
+
 # BASH_SOURCE is unset when the script is fed via stdin (curl | bash) or
 # bash -c "…"; fall back to $0 so set -u doesn't abort the installer.
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
@@ -26,10 +30,19 @@ die()   { printf '\033[1;31m[FAIL]\033[0m %s\n' "$*" >&2; exit 1; }
 
 usage() {
     cat <<'EOF'
-usage: install.sh [--yes] [--help]
+usage: install.sh [--yes] [--help] [--uninstall] [--keep-db] [--purge-packages]
 
-  --yes, -y   non-interactive: accept all defaults
-  --help, -h  show this help
+  --yes, -y          non-interactive: accept all defaults / confirmations
+  --help, -h         show this help
+
+  --uninstall        full purge of this host: stop and remove the engine,
+                     systemd unit, cron job, openvpn config, web config,
+                     firewall rules, /usr/local/IBSng, /etc/ibsng,
+                     /var/log/IBSng, and drop the IBSng database and role
+  --keep-db          with --uninstall: keep the IBSng database and role
+  --purge-packages   with --uninstall: also purge the web/database packages
+                     the installer uses (WARNING: removes apache2/php/
+                     postgresql - may break other software on this host)
 
 defaults: prefix /usr/local/IBSng, db password ibsdbpass,
           admin password "system", openvpn off, firewall rules off
@@ -40,6 +53,9 @@ for arg in "$@"; do
     case "$arg" in
         -y|--yes) ASSUME_YES=1 ;;
         -h|--help) usage; exit 0 ;;
+        -u|--uninstall) UNINSTALL=1 ;;
+        --keep-db) KEEP_DB=1 ;;
+        --purge-packages) PURGE_PKGS=1 ;;
         *) usage >&2; die "unknown argument: $arg" ;;
     esac
 done
@@ -82,6 +98,157 @@ fi
 HAS_SYSTEMD=0
 if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
     HAS_SYSTEMD=1
+fi
+
+# ---------------------------------------------------------------- uninstall
+run_uninstall() {
+    PREFIX="${PREFIX:-/usr/local/IBSng}"
+
+    info "IBSng full uninstall will remove:"
+    info "  - engine process, systemd unit, init.d script, pid file"
+    info "  - $PREFIX, /etc/ibsng (env/credentials), /var/log/IBSng"
+    info "  - apache/web config, /etc/cron.d/ibsng-openvpn-interim, openvpn config"
+    info "  - ufw/firewalld rules for 80/tcp, 1812/udp, 1813/udp, 1194/udp"
+    if [ "$KEEP_DB" -eq 1 ]; then
+        info "  - database: KEPT (--keep-db)"
+    else
+        info "  - database: DROP database IBSng and role ibs (IRREVERSIBLE)"
+    fi
+    if [ "$PURGE_PKGS" -eq 1 ]; then
+        info "  - packages: PURGED (apache/php/postgresql - may affect other software!)"
+    else
+        info "  - packages: kept"
+    fi
+
+    if [ "$ASSUME_YES" -ne 1 ]; then
+        [ -t 0 ] || die "stdin is not a terminal - re-run with --yes for non-interactive purge"
+        local __answer=""
+        read -r -p "Proceed with full uninstall? [y/N]: " __answer || true
+        case "$__answer" in
+            y|Y|yes|Yes) ;;
+            *) info "aborted - nothing was changed"; return 1 ;;
+        esac
+    fi
+
+    # ---- stop the engine
+    if [ "$HAS_SYSTEMD" -eq 1 ]; then
+        systemctl stop ibsng >/dev/null 2>&1 || true
+        systemctl disable ibsng >/dev/null 2>&1 || true
+    fi
+    service IBSng stop >/dev/null 2>&1 || true
+    pkill -f "${PREFIX}/ibs[.]py" >/dev/null 2>&1 || true
+    local _w
+    for _w in 1 2 3 4 5; do
+        pgrep -f "${PREFIX}/ibs[.]py" >/dev/null 2>&1 || break
+        sleep 1
+    done
+    pkill -9 -f "${PREFIX}/ibs[.]py" >/dev/null 2>&1 || true
+    rm -f /run/IBSng.pid /run/openvpn/ibsng.status /run/openvpn/ibsng.sock
+    info "engine stopped and runtime files removed"
+
+    # ---- unit, cron, init.d, openvpn
+    rm -f /etc/systemd/system/ibsng.service
+    if [ "$HAS_SYSTEMD" -eq 1 ]; then
+        systemctl daemon-reload >/dev/null 2>&1 || true
+        systemctl disable --now openvpn-server@ibsng openvpn@ibsng >/dev/null 2>&1 || true
+    fi
+    rm -f /etc/cron.d/ibsng-openvpn-interim /etc/init.d/IBSng
+    rm -f /etc/openvpn/server/ibsng.conf /etc/openvpn/ibsng.conf
+    info "service unit, cron job and openvpn config removed"
+
+    # ---- web config + reload
+    if [ "$PKG_MGR" = apt ]; then
+        command -v a2disconf >/dev/null 2>&1 && a2disconf ibsng >/dev/null 2>&1 || true
+        rm -f /etc/apache2/conf-available/ibsng.conf /etc/apache2/conf-enabled/ibsng.conf
+    else
+        rm -f /etc/httpd/conf.d/ibsng.conf
+    fi
+    if pgrep -x apache2 >/dev/null 2>&1 || pgrep -x httpd >/dev/null 2>&1; then
+        if [ "$PKG_MGR" = apt ]; then
+            systemctl reload apache2 >/dev/null 2>&1 ||
+                service apache2 reload >/dev/null 2>&1 ||
+                apachectl graceful >/dev/null 2>&1 || true
+        else
+            systemctl reload httpd >/dev/null 2>&1 ||
+                service httpd reload >/dev/null 2>&1 || true
+        fi
+    fi
+    info "web config removed"
+
+    # ---- firewall rules the installer may have opened
+    if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q ALLOW; then
+        local _p
+        for _p in 80/tcp 1812/udp 1813/udp 1194/udp; do
+            ufw --force delete allow "$_p" >/dev/null 2>&1 || true
+            ufw --force delete allow "$_p" >/dev/null 2>&1 || true
+        done
+        info "ufw rules removed (80/1812/1813/1194)"
+    elif command -v firewall-cmd >/dev/null 2>&1 && firewall-cmd --state >/dev/null 2>&1; then
+        firewall-cmd --permanent --remove-port=80/tcp >/dev/null 2>&1 || true
+        firewall-cmd --permanent --remove-port=1812/udp >/dev/null 2>&1 || true
+        firewall-cmd --permanent --remove-port=1813/udp >/dev/null 2>&1 || true
+        firewall-cmd --permanent --remove-port=1194/udp >/dev/null 2>&1 || true
+        firewall-cmd --reload >/dev/null 2>&1 || true
+        info "firewalld ports removed (80/1812/1813/1194)"
+    fi
+
+    # ---- database (before package purge; local cluster stays up)
+    if [ "$KEEP_DB" -eq 1 ]; then
+        info "database IBSng and role ibs kept"
+    else
+        if [ "$USE_REMOTE_DB" -eq 1 ]; then
+            local _super=(psql -h "$DB_HOST" -p "$DB_PORT"
+                          -U "${IBS_DB_SUPERUSER:-postgres}" -d postgres)
+            PGPASSWORD="${IBS_DB_SUPERUSER_PASSWORD:-${IBS_DB_PASSWORD:-}}" \
+                "${_super[@]}" -c 'drop database if exists "IBSng"' >/dev/null \
+                || warn "could not drop database IBSng on $DB_HOST"
+            PGPASSWORD="${IBS_DB_SUPERUSER_PASSWORD:-${IBS_DB_PASSWORD:-}}" \
+                "${_super[@]}" -c 'drop role if exists ibs' >/dev/null \
+                || warn "could not drop role ibs on $DB_HOST"
+        else
+            su postgres -c 'psql -c "drop database if exists \"IBSng\""' >/dev/null \
+                || warn "could not drop database IBSng"
+            su postgres -c 'psql -c "drop role if exists ibs"' >/dev/null \
+                || warn "could not drop role ibs"
+        fi
+        info "database IBSng and role ibs dropped"
+    fi
+
+    # ---- program tree, logs, credentials (guarded rm -rf)
+    if [ -n "$PREFIX" ] && [ "$PREFIX" != "/" ] && \
+       { [ -e "$PREFIX/ibs.py" ] || [ -d "$PREFIX/interface" ]; }; then
+        rm -rf "$PREFIX"
+        info "removed $PREFIX"
+    else
+        warn "skipping tree removal: '$PREFIX' does not look like an IBSng install"
+    fi
+    rm -rf /var/log/IBSng /etc/ibsng
+    info "removed /var/log/IBSng and /etc/ibsng"
+
+    # ---- packages (explicit opt-in only; may be shared with other software)
+    if [ "$PURGE_PKGS" -eq 1 ]; then
+        export DEBIAN_FRONTEND=noninteractive
+        if [ "$PKG_MGR" = apt ]; then
+            apt-get purge -y rsync apache2 php-cli libapache2-mod-php php-gd \
+                php-xml php-mbstring postgresql postgresql-client >/dev/null 2>&1 \
+                || warn "some packages could not be purged"
+        else
+            dnf remove -y rsync httpd php php-gd php-xml php-mbstring \
+                postgresql-server postgresql >/dev/null 2>&1 \
+                || warn "some packages could not be purged"
+        fi
+        info "packages purged (python3, git, curl and openvpn were left alone)"
+    fi
+
+    info "uninstall complete"
+    if [ "$KEEP_DB" -eq 1 ]; then
+        info "remember: database IBSng still exists - drop it manually if unwanted"
+    fi
+}
+
+if [ "$UNINSTALL" -eq 1 ]; then
+    run_uninstall
+    exit $?
 fi
 
 # ---------------------------------------------------------------- prompts

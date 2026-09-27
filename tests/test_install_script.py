@@ -76,6 +76,49 @@ def test_admin_password_hash_step():
     assert proc.stdout.strip() == "OK", proc.stderr
 
 
+def test_help_lists_uninstall_flags():
+    proc = run("--help")
+    assert proc.returncode == 0
+    for flag in ("--uninstall", "--keep-db", "--purge-packages"):
+        assert flag in proc.stdout
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="running as root")
+def test_uninstall_refuses_non_root():
+    proc = run("--uninstall")
+    assert proc.returncode == 1
+    assert "root" in proc.stderr
+
+
+def test_uninstall_is_a_full_purge():
+    # lock the destructive pieces in place: the purge must cover engine,
+    # unit, cron, web config, firewall, tree, credentials and the database
+    with open(INSTALL_SH) as fh:
+        script = fh.read()
+    for needle in (
+        "drop database if exists",      # database goes (unless --keep-db)
+        "drop role if exists ibs",
+        "a2disconf ibsng",              # web config
+        "rm -f /etc/cron.d/ibsng-openvpn-interim",
+        "rm -f /etc/systemd/system/ibsng.service",
+        'pkill -f "${PREFIX}/ibs[.]py"',
+        "rm -rf /var/log/IBSng /etc/ibsng",
+        "ufw --force delete allow",     # firewall rules
+        'rm -rf "$PREFIX"',
+        "apt-get purge",                # only behind --purge-packages
+    ):
+        assert needle in script, needle
+    # the DB drop must be skippable, package purge must be opt-in
+    assert 'if [ "$KEEP_DB" -eq 1 ]' in script
+    assert 'if [ "$PURGE_PKGS" -eq 1 ]' in script
+    # run_uninstall runs before any interactive prompt and exits immediately
+    assert script.index("run_uninstall") < script.index("Proceed with full uninstall")
+    dispatch = 'if [ "$UNINSTALL" -eq 1 ]; then\n    run_uninstall\n    exit $?\nfi'
+    assert dispatch in script
+    # dispatch must come before the interactive prompts, not after
+    assert script.index(dispatch) < script.index("# ---------------------------------------------------------------- prompts")
+
+
 def test_copy_tree_permission_guards():
     # mktemp creates the clone dir 0700 and rsync -a propagates the mode
     # to $PREFIX top dir; without normalization www-data cannot traverse

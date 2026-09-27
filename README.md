@@ -54,6 +54,29 @@ After installation open `http://server-ip/IBSng/admin`:
 **Security checklist:** change the default admin password, and keep the
 XML-RPC endpoint (127.0.0.1:1235) and the database local-only.
 
+## Uninstall (full purge)
+
+```bash
+sudo ./install.sh --uninstall            # interactive confirmation
+sudo ./install.sh --uninstall --yes      # non-interactive
+sudo ./install.sh --uninstall --yes --keep-db        # keep database + role
+sudo ./install.sh --uninstall --yes --purge-packages # also purge apache/php/postgresql
+```
+
+`--uninstall` stops and removes the engine, systemd unit, init script, cron
+job, OpenVPN config, Apache config, installer firewall rules (80/1812/1813),
+`/usr/local/IBSng`, `/etc/ibsng`, `/var/log/IBSng`, and drops the `IBSng`
+database and the `ibs` role. The database drop is irreversible unless you pass
+`--keep-db`. `--purge-packages` additionally removes the web/database
+packages — they may be shared with other software, so it is never implied.
+Packages (python3, git, curl, openvpn) are kept unless `--purge-packages` is
+given. The one-liner form also works:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Liwyd/IBSng/main/install.sh \
+  | sudo bash -s -- --uninstall --yes
+```
+
 ## Docker (app + database)
 
 ```bash
