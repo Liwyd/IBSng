@@ -165,9 +165,11 @@ class UserLoader:
             create BasicUser instance from basic_user_info
             basic_user_info(dic): dic of user infos, normally returned by __fetchBasicUserInfo
         """
+        # users.credit is numeric(12,2) -> decimal.Decimal from PyGreSQL;
+        # current-credit math mixes it with float usage amounts
         return BasicUser(basic_user_info["user_id"],
                          basic_user_info["owner_id"],
-                         basic_user_info["credit"],
+                         float(basic_user_info["credit"]),
                          basic_user_info["group_id"],
                          basic_user_info["creation_date"])
                          

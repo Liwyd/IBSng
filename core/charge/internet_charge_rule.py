@@ -40,8 +40,10 @@ class InternetChargeRule(ChargeRule):
         ChargeRule.__init__(self,rule_id,charge_obj,day_of_weeks,start,end,ras_id,ports)
         self.bandwidth_limit=bandwidth_limit
         self.assumed_kps=assumed_kps
-        self.cpm=cpm
-        self.cpk=cpk
+        # numeric columns come back as decimal.Decimal from PyGreSQL;
+        # all charge arithmetic runs on floats (py3 forbids Decimal*float)
+        self.cpm=float(cpm)
+        self.cpk=float(cpk)
         self.bw_tx_leaf_id=bw_tx_leaf_id
         self.bw_rx_leaf_id=bw_rx_leaf_id
 

@@ -40,8 +40,30 @@ class Time:
         (self.formatted_time,self.hour,self.minute,self.second)=self.__formatTime(time_str)
 
 
-    def __cmp__(self,time_obj):
-        return cmp(self.getSecondsFromMorning(),time_obj.getSecondsFromMorning())
+    def __eq__(self, other):
+        if not isinstance(other, Time):
+            return NotImplemented
+        return self.getSecondsFromMorning() == other.getSecondsFromMorning()
+
+    def __lt__(self, other):
+        if not isinstance(other, Time):
+            return NotImplemented
+        return self.getSecondsFromMorning() < other.getSecondsFromMorning()
+
+    def __le__(self, other):
+        if not isinstance(other, Time):
+            return NotImplemented
+        return self.getSecondsFromMorning() <= other.getSecondsFromMorning()
+
+    def __gt__(self, other):
+        if not isinstance(other, Time):
+            return NotImplemented
+        return self.getSecondsFromMorning() > other.getSecondsFromMorning()
+
+    def __ge__(self, other):
+        if not isinstance(other, Time):
+            return NotImplemented
+        return self.getSecondsFromMorning() >= other.getSecondsFromMorning()
 
     def __formatTime(self,time_str):
         """

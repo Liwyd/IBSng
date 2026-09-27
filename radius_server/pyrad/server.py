@@ -151,6 +151,13 @@ class Server(host.Host):
                                 packet.AccountingResponse ]:
                         raise PacketError("Received non-accounting packet on accounting port")
 
+                # a packet carrying an accounting code but built by the
+                # authentication path (accounting code sent to port 1812)
+                # has no VerifyAcctRequest - drop it cleanly instead of
+                # raising AttributeError inside the worker thread
+                if not isinstance(pkt, packet.AcctPacket):
+                        raise PacketError("AccountingRequest with wrong packet type from host %s"%pkt.source[0])
+
                 if not pkt.VerifyAcctRequest():
                     raise PacketError("AccountingRequest Authenticator is invalid from host %s"%pkt.source[0])
 

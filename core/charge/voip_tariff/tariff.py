@@ -116,7 +116,7 @@ class Prefix:
         self.prefix_id=prefix_id
         self.prefix_code=prefix_code
         self.prefix_name=prefix_name
-        self.cpm=cpm
+        self.cpm=float(cpm)  # numeric column arrives as decimal.Decimal
         self.free_seconds=free_seconds
         self.min_duration=min_duration
         self.round_to=round_to
