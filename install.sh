@@ -64,6 +64,24 @@ case "${ID:-}" in
 esac
 info "distro: ${PRETTY_NAME:-$ID}, package manager: $PKG_MGR"
 
+# ------------------------------------------------------- environment knobs
+# IBS_DB_HOST / IBS_DB_PORT / IBS_DB_PASSWORD configure the database the
+# installer bootstraps and the service talks to (containers/CI use these).
+# Setting IBS_DB_SUPERUSER[_PASSWORD] forces TCP bootstrap even on 127.0.0.1
+# (e.g. a postgres service container published on localhost).
+DB_HOST="${IBS_DB_HOST:-127.0.0.1}"
+DB_PORT="${IBS_DB_PORT:-5432}"
+USE_REMOTE_DB=0
+if [ "$DB_HOST" != "127.0.0.1" ] && [ "$DB_HOST" != "localhost" ]; then
+    USE_REMOTE_DB=1
+elif [ -n "${IBS_DB_SUPERUSER:-}" ] || [ -n "${IBS_DB_SUPERUSER_PASSWORD:-}" ]; then
+    USE_REMOTE_DB=1
+fi
+HAS_SYSTEMD=0
+if command -v systemctl >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+    HAS_SYSTEMD=1
+fi
+
 # ---------------------------------------------------------------- prompts
 prompt() { # prompt VAR "question" "default"
     local __var="$1" __q="$2" __default="$3" __answer=""
@@ -89,7 +107,7 @@ prompt_secret() { # prompt_secret VAR "question" "default"
 }
 
 prompt PREFIX     "Install prefix"                 "/usr/local/IBSng"
-prompt DB_PASS    "PostgreSQL password for role ibs" "ibsdbpass"
+prompt DB_PASS    "PostgreSQL password for role ibs" "${IBS_DB_PASSWORD:-ibsdbpass}"
 prompt_secret ADMIN_PASS "Web admin password for user 'system'" "system"
 case "$DB_PASS" in
     *"'"*|*"\\"*) die "database password must not contain single quotes or backslashes" ;;
@@ -146,8 +164,10 @@ install_packages_dnf() {
 }
 
 if [ "$PKG_MGR" = apt ]; then
-    PACKAGES=(postgresql rsync curl ca-certificates
+    PACKAGES=(rsync curl ca-certificates
               apache2 php-cli libapache2-mod-php php-gd php-xml php-mbstring)
+    if [ "$USE_REMOTE_DB" -eq 1 ]; then PACKAGES+=(postgresql-client)
+    else PACKAGES+=(postgresql); fi
     if [ "$ENABLE_OPENVPN" = y ]; then PACKAGES+=(openvpn); fi
     install_packages_apt "${PACKAGES[@]}"
     # PyGreSQL: distro package first, pip fallback (Ubuntu is PEP 668 managed)
@@ -160,7 +180,9 @@ if [ "$PKG_MGR" = apt ]; then
         fi
     fi
 else
-    PACKAGES=(postgresql-server rsync curl git httpd php php-gd php-xml php-mbstring python3)
+    PACKAGES=(rsync curl git httpd php php-gd php-xml php-mbstring python3)
+    if [ "$USE_REMOTE_DB" -eq 1 ]; then PACKAGES+=(postgresql)
+    else PACKAGES+=(postgresql-server); fi
     if [ "$ENABLE_OPENVPN" = y ]; then PACKAGES+=(openvpn); fi
     install_packages_dnf "${PACKAGES[@]}"
     if [ "$HAVE_PG_PY" -eq 0 ]; then
@@ -176,6 +198,12 @@ python3 -c 'import pg' >/dev/null 2>&1 || die "PyGreSQL (import pg) unavailable"
 
 # ---------------------------------------------------------------- postgres
 psql_as_postgres() {
+    if [ "$USE_REMOTE_DB" -eq 1 ]; then
+        PGPASSWORD="${IBS_DB_SUPERUSER_PASSWORD:-${DB_PASS:-}}" \
+        psql -h "$DB_HOST" -p "$DB_PORT" -U "${IBS_DB_SUPERUSER:-postgres}" \
+             -d postgres -v ON_ERROR_STOP=1 -qtAc "$1"
+        return
+    fi
     if command -v runuser >/dev/null 2>&1; then
         runuser -u postgres -- psql -v ON_ERROR_STOP=1 -qtAc "$1"
     else
@@ -184,7 +212,9 @@ psql_as_postgres() {
 }
 
 setup_postgres() {
-    if [ "$PKG_MGR" = apt ]; then
+    if [ "$USE_REMOTE_DB" -eq 1 ]; then
+        info "using external postgres at $DB_HOST:$DB_PORT (no local cluster)"
+    elif [ "$PKG_MGR" = apt ]; then
         systemctl enable --now postgresql >/dev/null 2>&1 || true
     else
         if [ ! -d /var/lib/pgsql/data/base ]; then
@@ -219,7 +249,7 @@ setup_postgres() {
 }
 
 sql_ib() { # run SQL as role ibs over TCP
-    PGPASSWORD="$DB_PASS" psql -h 127.0.0.1 -p "${IBS_DB_PORT:-5432}" -U ibs -d IBSng \
+    PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U ibs -d IBSng \
         -v ON_ERROR_STOP=1 -qtAc "$1"
 }
 
@@ -231,7 +261,7 @@ load_schema() {
     info "loading database schema"
     local f
     for f in tables.sql functions.sql initial.sql defs.sql; do
-        PGPASSWORD="$DB_PASS" psql -h 127.0.0.1 -U ibs -d IBSng \
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U ibs -d IBSng \
             -v ON_ERROR_STOP=1 -q -f "$SOURCE/db/$f"
     done
 }
@@ -265,8 +295,8 @@ copy_tree() {
 write_env_file() {
     install -d -m 755 /etc/ibsng
     cat > /etc/ibsng/ibsng.env <<EOF
-IBS_DB_HOST=127.0.0.1
-IBS_DB_PORT=5432
+IBS_DB_HOST=$DB_HOST
+IBS_DB_PORT=$DB_PORT
 IBS_DB_USERNAME=ibs
 IBS_DB_PASSWORD=$DB_PASS
 EOF
@@ -300,15 +330,24 @@ EOF
     install -d -m 775 -o root -g "$web_user" /var/log/IBSng
     chown -R "$web_user:" "$PREFIX/interface/smarty/templates_c"
     chmod -R ug+rw "$PREFIX/interface/smarty/templates_c"
-    systemctl enable apache2 >/dev/null 2>&1 || \
-        systemctl enable httpd >/dev/null 2>&1 || \
-        warn "could not enable web server service"
-    systemctl reload-or-restart apache2 >/dev/null 2>&1 || \
-        systemctl reload-or-restart httpd >/dev/null 2>&1 || \
-        warn "could not (re)load web server"
+    if [ "$HAS_SYSTEMD" -eq 1 ]; then
+        systemctl enable apache2 >/dev/null 2>&1 || \
+            systemctl enable httpd >/dev/null 2>&1 || \
+            warn "could not enable web server service"
+        systemctl reload-or-restart apache2 >/dev/null 2>&1 || \
+            systemctl reload-or-restart httpd >/dev/null 2>&1 || \
+            warn "could not (re)load web server"
+    else
+        apachectl -t >/dev/null 2>&1 || warn "apache configuration test failed"
+        info "no systemd - web server config validated; start apache from your init"
+    fi
 }
 
 setup_service() {
+    if [ "$HAS_SYSTEMD" -eq 0 ]; then
+        info "no systemd - skipping ibsng.service (start $PREFIX/ibs.py from your init)"
+        return 0
+    fi
     info "installing systemd unit ibsng.service"
     cat > /etc/systemd/system/ibsng.service <<EOF
 [Unit]
@@ -417,9 +456,13 @@ EOF
 EOF
     chmod 644 /etc/cron.d/ibsng-openvpn-interim
 
-    systemctl enable --now openvpn-server@ibsng >/dev/null 2>&1 || \
-        systemctl enable --now openvpn@ibsng >/dev/null 2>&1 || \
-        warn "could not start openvpn-server@ibsng - check /etc/openvpn/server/ibsng.conf"
+    if [ "$HAS_SYSTEMD" -eq 1 ]; then
+        systemctl enable --now openvpn-server@ibsng >/dev/null 2>&1 || \
+            systemctl enable --now openvpn@ibsng >/dev/null 2>&1 || \
+            warn "could not start openvpn-server@ibsng - check /etc/openvpn/server/ibsng.conf"
+    else
+        info "no systemd - openvpn config written but not started"
+    fi
     info "OpenVPN accounting wired (server config + interim cron)"
 }
 
@@ -437,6 +480,13 @@ setup_firewall
 
 LOCAL_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1); exit}')"
 LOCAL_IP="${LOCAL_IP:-127.0.0.1}"
+if [ "$HAS_SYSTEMD" -eq 1 ]; then
+    SERVICE_HINT="systemctl {start|stop|status|restart} ibsng"
+    LOG_HINT="journalctl -u ibsng  and  /var/log/IBSng/"
+else
+    SERVICE_HINT="start $PREFIX/ibs.py from your init (the docker entrypoint does this)"
+    LOG_HINT="/var/log/IBSng/"
+fi
 
 cat <<EOF
 
@@ -445,8 +495,8 @@ IBSng installation finished.
   Admin panel:   http://$LOCAL_IP/IBSng/admin
   Admin login:   system / (the password you chose)
   RADIUS:        UDP 1812 (auth), UDP 1813 (accounting)
-  Service:       systemctl {start|stop|status|restart} ibsng
-  Logs:          journalctl -u ibsng  and  /var/log/IBSng/
+  Service:       $SERVICE_HINT
+  Logs:          $LOG_HINT
 
 Security checklist:
   * change the admin password immediately if you kept the default
