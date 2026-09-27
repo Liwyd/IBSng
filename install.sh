@@ -247,6 +247,19 @@ setup_postgres() {
         done
     fi
 
+    if [ "$USE_REMOTE_DB" -eq 0 ]; then
+        # containers / hosts without systemd never start the local cluster
+        # via the package postinst - bring it up ourselves, then verify
+        local _pg_try
+        for _pg_try in 1 2 3 4 5; do
+            psql_as_postgres "select 1" >/dev/null 2>&1 && break
+            service postgresql start >/dev/null 2>&1 || true
+            sleep 2
+        done
+        psql_as_postgres "select 1" >/dev/null 2>&1 || \
+            die "local PostgreSQL is not running - check 'service postgresql status'"
+    fi
+
     if [ "$(psql_as_postgres "select 1 from pg_roles where rolname='ibs'")" != "1" ]; then
         info "creating postgres role ibs"
         psql_as_postgres "create role ibs with login createdb password '$DB_PASS'" >/dev/null
