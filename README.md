@@ -13,6 +13,25 @@ supported on:
 
 ## Install on a host
 
+One-liner (interactive prompts; requires `curl`):
+
+```bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/Liwyd/IBSng/main/install.sh)"
+```
+
+Fully non-interactive — accept all defaults (admin/system):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Liwyd/IBSng/main/install.sh | sudo bash -s -- --yes
+```
+
+Note: `sudo bash <(curl …)` does **not** work — sudo closes file descriptors ≥ 3
+before running the command, so bash cannot open `/dev/fd/63`. When there is no
+local clone the installer clones the repository itself (it installs `git` first
+if needed).
+
+or from a clone:
+
 ```bash
 git clone https://github.com/Liwyd/IBSng.git
 cd IBSng

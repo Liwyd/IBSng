@@ -13,7 +13,9 @@
 #
 set -euo pipefail
 
-SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# BASH_SOURCE is unset when the script is fed via stdin (curl | bash) or
+# bash -c "…"; fall back to $0 so set -u doesn't abort the installer.
+SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 ASSUME_YES=0
 ENABLE_OPENVPN=""
 ENABLE_FIREWALL=""
@@ -120,16 +122,6 @@ fi
 ENABLE_OPENVPN="${ENABLE_OPENVPN:-n}"
 ENABLE_FIREWALL="${ENABLE_FIREWALL:-n}"
 
-# ---------------------------------------------------------------- source tree
-if [ -f "$SRC_DIR/ibs.py" ]; then
-    SOURCE="$SRC_DIR"
-else
-    info "no local source tree next to install.sh - cloning repository"
-    TMP_CLONE="$(mktemp -d /tmp/ibsng-src.XXXXXX)"
-    git clone --depth 1 https://github.com/Liwyd/IBSng.git "$TMP_CLONE"
-    SOURCE="$TMP_CLONE"
-fi
-
 # ---------------------------------------------------------------- packages
 python3 -c 'import pg' >/dev/null 2>&1 && HAVE_PG_PY=1 || HAVE_PG_PY=0
 
@@ -195,6 +187,24 @@ else
     fi
 fi
 python3 -c 'import pg' >/dev/null 2>&1 || die "PyGreSQL (import pg) unavailable"
+
+# ---------------------------------------------------------------- source tree
+# (resolved after package bootstrap: the clone fallback needs git, which a
+# fresh minimal distro does not ship)
+if [ -f "$SRC_DIR/ibs.py" ]; then
+    SOURCE="$SRC_DIR"
+else
+    info "no local source tree next to install.sh - cloning repository"
+    if ! command -v git >/dev/null 2>&1; then
+        info "git missing - installing it first"
+        if [ "$PKG_MGR" = apt ]; then install_packages_apt git
+        else install_packages_dnf git
+        fi
+    fi
+    TMP_CLONE="$(mktemp -d /tmp/ibsng-src.XXXXXX)"
+    git clone --depth 1 https://github.com/Liwyd/IBSng.git "$TMP_CLONE"
+    SOURCE="$TMP_CLONE"
+fi
 
 # ---------------------------------------------------------------- postgres
 psql_as_postgres() {
