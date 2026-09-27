@@ -508,7 +508,8 @@ setup_service
 setup_openvpn
 setup_firewall
 
-LOCAL_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1); exit}')"
+# display only - tolerate missing iproute2 / no route (minimal containers)
+LOCAL_IP="$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") print $(i+1); exit}')" || LOCAL_IP=""
 LOCAL_IP="${LOCAL_IP:-127.0.0.1}"
 if [ "$HAS_SYSTEMD" -eq 1 ]; then
     SERVICE_HINT="systemctl {start|stop|status|restart} ibsng"
