@@ -74,3 +74,16 @@ def test_admin_password_hash_step():
                           input=verify, capture_output=True, text=True,
                           timeout=30)
     assert proc.stdout.strip() == "OK", proc.stderr
+
+
+def test_copy_tree_permission_guards():
+    # mktemp creates the clone dir 0700 and rsync -a propagates the mode
+    # to $PREFIX top dir; without normalization www-data cannot traverse
+    # the tree and every /IBSng URL returns 403 (AH00035).
+    with open(INSTALL_SH) as fh:
+        script = fh.read()
+    assert 'chmod 755 "$TMP_CLONE"' in script
+    assert 'chmod -R u=rwX,go=rX "$PREFIX"' in script
+    # normalization must run before the explicit executable bits are set
+    assert script.index('chmod -R u=rwX,go=rX "$PREFIX"') < \
+        script.index('chmod 755 "$PREFIX/ibs.py"')

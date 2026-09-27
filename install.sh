@@ -202,6 +202,9 @@ else
         fi
     fi
     TMP_CLONE="$(mktemp -d /tmp/ibsng-src.XXXXXX)"
+    # mktemp creates the dir 0700; rsync -a would propagate that to
+    # $PREFIX and the web server could no longer traverse the tree (403)
+    chmod 755 "$TMP_CLONE"
     git clone --depth 1 https://github.com/Liwyd/IBSng.git "$TMP_CLONE"
     SOURCE="$TMP_CLONE"
 fi
@@ -298,6 +301,10 @@ copy_tree() {
         --exclude '.git' --exclude '.pytest_cache' --exclude '__pycache__' \
         --exclude '.pytest_cache' \
         "$SOURCE/" "$PREFIX/"
+    # normalize modes regardless of the source tree's umask/clone perms:
+    # dirs and executables get x (X), everything else 644; the web server
+    # must be able to traverse every path under $PREFIX
+    chmod -R u=rwX,go=rX "$PREFIX"
     chmod 755 "$PREFIX/ibs.py" "$PREFIX/backup_ibs" "$PREFIX/restore_ibs" \
         "$PREFIX/addons/openvpn/openvpn_agent.py"
 }
