@@ -1,0 +1,49 @@
+# IBSng: application + database (per scope decision: no OpenVPN/agent here).
+#
+#   docker compose up -d --build
+#   open http://localhost/IBSng/admin   (login: system / system)
+#
+# First start runs the idempotent installer inside the ibsng container
+# (~1-2 min); later starts skip straight to service start.
+name: ibsng
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  ibsng:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      IBS_DB_HOST: db
+      IBS_DB_PORT: "5432"
+      IBS_DB_USERNAME: ibs
+      IBS_DB_PASSWORD: ibsdbpass
+      IBS_DB_SUPERUSER: postgres
+      IBS_DB_SUPERUSER_PASSWORD: postgres
+    ports:
+      - "80:80"
+      - "1812:1812/udp"
+      - "1813:1813/udp"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "-o", "/dev/null", "http://127.0.0.1/IBSng/admin/"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 300s
+    restart: unless-stopped
+
+volumes:
+  dbdata:

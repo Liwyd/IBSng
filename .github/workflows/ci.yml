@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: pytest + php lint + installer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ibs
+          POSTGRES_PASSWORD: ibsdev
+          POSTGRES_DB: IBSng
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U ibs"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      IBSNG_TEST_DB_HOST: 127.0.0.1
+      IBSNG_TEST_DB_PORT: "55432"
+      IBSNG_TEST_DB_PASSWORD: ibsdev
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: python env
+        run: |
+          python3 -m venv /tmp/venv
+          /tmp/venv/bin/pip install --quiet pytest PyGreSQL
+          echo /tmp/venv/bin >> "$GITHUB_PATH"
+
+      - name: bash syntax
+        run: |
+          bash -n install.sh
+          bash -n backup_ibs
+          bash -n restore_ibs
+          bash -n docker/entrypoint.sh
+
+      - name: pytest
+        run: python -m pytest tests/ -q
+
+      - name: php lint (php 8.3, *.php + *.inc)
+        run: |
+          docker run --rm -v "$PWD":/app:ro -w /app php:8.3-cli \
+            sh -c 'out=$(find interface \( -name "*.php" -o -name "*.inc" \) -print0 \
+              | xargs -0 -n20 -P8 php -l 2>&1 | grep -v "No syntax errors" || true);
+              if [ -n "$out" ]; then echo "$out"; exit 1; fi'
+
+      - name: installer (systemd path) + admin login smoke
+        env:
+          IBS_DB_HOST: 127.0.0.1
+          IBS_DB_PORT: "55432"
+          IBS_DB_PASSWORD: ibsdev
+          IBS_DB_SUPERUSER: ibs
+          IBS_DB_SUPERUSER_PASSWORD: ibsdev
+        run: |
+          sudo -E ./install.sh --yes
+          code=$(curl -s -o /dev/null -w '%{http_code}' -c /tmp/cj \
+            -d 'username=system&password=system' http://127.0.0.1/IBSng/admin/)
+          test "$code" = "302"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cj \
+            http://127.0.0.1/IBSng/admin/admin_index.php)
+          test "$code" = "200"
+
+  container:
+    name: docker compose e2e
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build + up
+        run: docker compose up -d --build
+
+      - name: wait for admin login page
+        run: |
+          for i in $(seq 1 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost/IBSng/admin/ || true)
+            if [ "$code" = "200" ]; then exit 0; fi
+            sleep 5
+          done
+          echo "admin page never came up" >&2
+          docker compose logs --tail 200
+          exit 1
+
+      - name: admin login e2e
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -c /tmp/cj \
+            -d 'username=system&password=system' http://localhost/IBSng/admin/)
+          test "$code" = "302"
+          code=$(curl -s -o /dev/null -w '%{http_code}' -b /tmp/cj \
+            http://localhost/IBSng/admin/admin_index.php)
+          test "$code" = "200"
+
+      - name: graceful stop
+        run: docker compose stop -t 60
+
+      - name: logs on failure
+        if: failure()
+        run: docker compose logs --tail 300
+
+      - name: cleanup
+        if: always()
+        run: docker compose down -v

@@ -2,49 +2,64 @@
 
 ## Overview
 
-**IBSNG** is a robust Radius Server that provides comprehensive support for various devices. Optimized for ease of installation and configuration, this free software is designed for CentOS 7 systems. The installation process has been streamlined with the creation of the `install.sh` script, ensuring a straightforward setup experience for users with root privileges.
+**IBSNG** is a RADIUS server with a web admin panel, plan/quota accounting,
+and NAS integrations (including OpenVPN accounting via the bundled RADIUS
+NAS adapter). The codebase has been ported to Python 3 and PHP 8.3 and is
+supported on:
 
-## Integrated Installation Guide
+- **Ubuntu 24.04 / Debian** (first class)
+- **EL 8/9/10** (best effort)
+- **Docker** (application + PostgreSQL, see below)
 
-### Prerequisites
+## Install on a host
 
-- **Operating System:** CentOS 7
-- **User Privileges:** Root access is required for installation.
+```bash
+git clone https://github.com/Liwyd/IBSng.git
+cd IBSng
+sudo ./install.sh          # interactive, idempotent
+# or
+sudo ./install.sh --yes    # accept defaults (admin/system on system/system)
+```
 
-### Quick Setup Steps
+The installer is safe to re-run: it converges the host instead of failing
+halfway. It installs packages, bootstraps PostgreSQL (or uses an external
+database via `IBS_DB_*` environment variables), loads the schema, configures
+Apache, installs the `ibsng.service` systemd unit, and can optionally wire
+OpenVPN accounting.
 
-Follow these steps to swiftly install and configure the IBSNG Radius Server on your CentOS 7 system using the `install.sh` script:
+After installation open `http://server-ip/IBSng/admin`:
 
-1. **Run the Command**
+- **Username:** `system`
+- **Password:** the one you chose (`system` with `--yes`)
 
-    ```bash
-    bash <(curl -s https://raw.githubusercontent.com/AfazTech/IBSng/main/install.sh)
-    ```
+**Security checklist:** change the default admin password, and keep the
+XML-RPC endpoint (127.0.0.1:1235) and the database local-only.
 
-2. **Follow On-Screen Instructions**
+## Docker (app + database)
 
-    The script will seamlessly guide you through essential tasks such as package installation, PostgreSQL database initialization, repository cloning, firewall setup, and more.
+```bash
+docker compose up -d --build
+# open http://localhost/IBSng/admin   (login: system / system)
+```
 
-### Post-Installation Checklist
+First start runs the installer inside the container (~1-2 minutes); later
+starts skip setup. Ports: `80/tcp` (admin), `1812/udp` (RADIUS auth),
+`1813/udp` (RADIUS accounting). Data lives in the `dbdata` volume.
 
-- **Access Your IBSNG Server**
+## Development & tests
 
-    Visit http://server-ip/IBSng/admin to log in:
-    
-    - **Username:** system
-    - **Password:** system
+```bash
+python3 -m pytest tests/ -q
+```
 
-- **Security Suggestions**
+Tests expect a PostgreSQL with the IBSng schema; point them at one with
+`IBSNG_TEST_DB_HOST`, `IBSNG_TEST_DB_PORT`, `IBSNG_TEST_DB_USER`,
+`IBSNG_TEST_DB_PASSWORD`, `IBSNG_TEST_DB_NAME`. CI
+(`.github/workflows/ci.yml`) runs the suite, a PHP 8.3 lint sweep over all
+`interface/**/*.{php,inc}`, an installer smoke test with admin-login E2E,
+and a full Docker Compose end-to-end test on every push.
 
-    Change the default password and secure the admin panel by restricting IP access promptly.
-
-  
-### [training ibsng (persion)](https://raw.githubusercontent.com/imafaz/IBSng/main/training.pdf)
-
-
-## Further Customization
-
-Congratulations! You have successfully installed the IBSNG Radius Server using the `install.sh` script. For additional customization and configuration options, consult the official documentation or explore the repository.
+### [training ibsng (persian)](https://raw.githubusercontent.com/imafaz/IBSng/main/training.pdf)
 
 ## License
 
