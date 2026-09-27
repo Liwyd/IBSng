@@ -81,6 +81,8 @@ class OpenVPNRas(Ras):
                 return (self.onlines[port]["in_bytes"], self.onlines[port]["out_bytes"],
                         self.onlines[port].get("in_rate", 0), self.onlines[port].get("out_rate", 0))
             else:
+                self.toLog("getInOutBytes: port %r not in onlines (have %r)" %
+                           (port, list(self.onlines.keys())), LOG_ERROR)
                 return (0, 0, 0, 0)
         except:
             logException(LOG_ERROR)
@@ -129,7 +131,13 @@ class OpenVPNRas(Ras):
                                 "Acct-Session-Id": "session_id"})
             ras_msg.setInAttrsIfExists({"Framed-IP-Address": "remote_ip"})
             ras_msg["start_accounting"] = True
-            ras_msg["update_attrs"] = ["remote_ip", "start_accounting"]
+            # only advertise remote_ip for the update plugins when the
+            # packet actually carried Framed-IP-Address - otherwise
+            # RemoteIPUserPlugin.update() raises KeyError 'remote_ip'
+            # and the session start aborts (no charge start, zero bytes)
+            ras_msg["update_attrs"] = ["start_accounting"]
+            if ras_msg.hasAttr("remote_ip"):
+                ras_msg["update_attrs"].insert(0, "remote_ip")
 
             self.__addInOnlines(ras_msg)
 
